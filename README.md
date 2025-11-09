@@ -188,17 +188,6 @@ MedChainID/
 └── .github/workflows/ # CI/CD (tests, Devnet, Testnet, Mainnet deploys)
 ```
 
-## 🤝 Contributing
-
-1. Fork & create feature branch
-2. Ensure tests pass (`npm test`, `aptos move test`)
-3. Submit PR with description
-
-**Requirements**:
-- TypeScript (backend) + React (frontend) + Move (contracts)
-- 80%+ test coverage for Move modules
-- ESLint/Prettier compliance
-
 ## 📄 License
 
 Apache 2.0 — see [LICENSE](./LICENSE)
