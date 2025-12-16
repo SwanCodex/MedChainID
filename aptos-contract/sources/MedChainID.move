@@ -2,6 +2,7 @@ module medchain::MedChainID {
     use std::signer;
     use std::vector;
     use aptos_framework::event;
+    use aptos_framework::account; // <--- ADD THIS IMPORT
 
     /// Error codes
     const E_NOT_INITIALIZED: u64 = 1;
@@ -12,10 +13,10 @@ module medchain::MedChainID {
     /// Represents a single Medical Token
     struct MedicalToken has key, store {
         token_id: u64,
-        record_type: vector<u8>,  // "Insurance", "Birth Certificate", etc.
-        document_hash: vector<u8>, // SHA-256 hash
-        ipfs_cid: vector<u8>,      // IPFS Content ID
-        is_consumed: bool,         // One-Time-Use flag
+        record_type: vector<u8>,
+        document_hash: vector<u8>,
+        ipfs_cid: vector<u8>,
+        is_consumed: bool,
         issuer: address,
         timestamp: u64,
     }
@@ -47,8 +48,9 @@ module medchain::MedChainID {
             move_to(account, TokenRegistry {
                 tokens: vector::empty<MedicalToken>(),
                 next_token_id: 0,
-                mint_events: event::new_event_handle<MintEvent>(account),
-                consume_events: event::new_event_handle<ConsumeEvent>(account),
+                // FIX: Use account::new_event_handle instead of event::new_event_handle
+                mint_events: account::new_event_handle<MintEvent>(account),
+                consume_events: account::new_event_handle<ConsumeEvent>(account),
             });
         };
     }
@@ -61,7 +63,6 @@ module medchain::MedChainID {
         ipfs_cid: vector<u8>,
     ) acquires TokenRegistry {
         let account_addr = signer::address_of(account);
-        
         if (!exists<TokenRegistry>(account_addr)) {
             initialize(account);
         };
@@ -82,7 +83,7 @@ module medchain::MedChainID {
 
         vector::push_back(&mut registry.tokens, token);
         registry.next_token_id = token_id + 1;
-
+        
         event::emit_event(&mut registry.mint_events, MintEvent {
             token_id,
             issuer: account_addr,
@@ -97,12 +98,11 @@ module medchain::MedChainID {
         token_id: u64,
     ) acquires TokenRegistry {
         assert!(exists<TokenRegistry>(issuer_addr), E_NOT_INITIALIZED);
-        
         let registry = borrow_global_mut<TokenRegistry>(issuer_addr);
         let len = vector::length(&registry.tokens);
         let i = 0;
         let found = false;
-
+        
         while (i < len) {
             let token = vector::borrow_mut(&mut registry.tokens, i);
             if (token.token_id == token_id) {
@@ -124,17 +124,16 @@ module medchain::MedChainID {
         });
     }
 
-    /// Verify if a token is valid (view function)
+    // Note: Changed /// to // to fix documentation warnings
+    // Verify if a token is valid (view function)
     #[view]
     public fun verify_token(issuer_addr: address, token_id: u64): (bool, address) acquires TokenRegistry {
         if (!exists<TokenRegistry>(issuer_addr)) {
             return (false, @0x0)
         };
-
         let registry = borrow_global<TokenRegistry>(issuer_addr);
         let len = vector::length(&registry.tokens);
         let i = 0;
-
         while (i < len) {
             let token = vector::borrow(&registry.tokens, i);
             if (token.token_id == token_id) {
@@ -146,18 +145,16 @@ module medchain::MedChainID {
         (false, @0x0)
     }
 
-    /// Get token details (view function)
+    // Get token details (view function)
     #[view]
     public fun get_token_details(
         issuer_addr: address,
         token_id: u64
     ): (vector<u8>, vector<u8>, vector<u8>, bool, address, u64) acquires TokenRegistry {
         assert!(exists<TokenRegistry>(issuer_addr), E_NOT_INITIALIZED);
-        
         let registry = borrow_global<TokenRegistry>(issuer_addr);
         let len = vector::length(&registry.tokens);
         let i = 0;
-
         while (i < len) {
             let token = vector::borrow(&registry.tokens, i);
             if (token.token_id == token_id) {

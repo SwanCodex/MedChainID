@@ -10,16 +10,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@aptos-labs/wallet-adapter-ant-design": "^2.1.0",
+    "@aptos-labs/wallet-adapter-react": "^2.4.0",
+    "@telegram-apps/bridge": "^2.11.0",
+    "antd": "^5.12.0",
+    "aptos": "^1.8.0",
+    "axios": "^1.6.2",
+    "petra-plugin-wallet-adapter": "^0.4.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "aptos": "^1.8.0",
-    "@aptos-labs/wallet-adapter-react": "^2.4.0",
-    "@aptos-labs/wallet-adapter-ant-design": "^2.1.0",
-    "petra-plugin-wallet-adapter": "^0.4.0",
     "react-qr-code": "^2.0.12",
     "react-qr-reader": "^3.0.0-beta-1",
-    "axios": "^1.6.2",
-    "antd": "^5.12.0",
     "react-router-dom": "^6.20.0"
   },
   "devDependencies": {
