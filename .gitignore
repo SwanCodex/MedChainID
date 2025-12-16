@@ -1,0 +1,16 @@
+.git/
+node_modules/
+__pycache__/
+*.pyc
+.env
+.env.local
+.env.production
+dist/
+build/
+.DS_Store
+*.log
+venv/
+env/
+.aptos/
+.vscode/
+.idea/

@@ -1,0 +1,17 @@
+[package]
+name = "MedChainID"
+version = "1.0.0"
+authors = []
+
+[addresses]
+medchain = "_"
+
+[dev-addresses]
+medchain = "0xCAFE"
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "mainnet"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dev-dependencies]
