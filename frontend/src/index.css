@@ -54,3 +54,67 @@ body {
   outline: 2px solid rgba(255, 255, 255, 0.3);
   outline-offset: 2px;
 }
+
+/* Wallet Adapter Dark Mode Overrides */
+.wallet-selector-dark .wallet-button,
+.ant-btn.wallet-button {
+  background-color: #1a1a1a !important;
+  border: 1px solid #333333 !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  transition: all 0.15s ease !important;
+}
+
+.wallet-selector-dark .wallet-button:hover,
+.ant-btn.wallet-button:hover {
+  background-color: #2a2a2a !important;
+  border-color: #555555 !important;
+  color: #ffffff !important;
+}
+
+/* Modal dark mode */
+.ant-modal-content {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+}
+
+.ant-modal-header {
+  background-color: #1a1a1a !important;
+  border-bottom: 1px solid #333333 !important;
+}
+
+.ant-modal-title {
+  color: #ffffff !important;
+}
+
+.ant-modal-close-x {
+  color: #888888 !important;
+}
+
+.ant-modal-close-x:hover {
+  color: #ffffff !important;
+}
+
+.ant-modal-body {
+  background-color: #1a1a1a !important;
+}
+
+/* Wallet list items */
+.wallet-menu-wrapper,
+.ant-dropdown-menu {
+  background-color: #1a1a1a !important;
+  border: 1px solid #333333 !important;
+}
+
+.wallet-menu-wrapper .wallet-name,
+.ant-dropdown-menu-item {
+  color: #ffffff !important;
+  background-color: transparent !important;
+}
+
+.wallet-menu-wrapper .wallet-name:hover,
+.ant-dropdown-menu-item:hover {
+  background-color: #2a2a2a !important;
+}

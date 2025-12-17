@@ -5,7 +5,10 @@
  */
 
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import WalletButton from './WalletButton';
+import { WalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
+import "@aptos-labs/wallet-adapter-ant-design/dist/index.css";
+import UserMenu from './UserMenu';
+import { useAuth } from '../contexts/AuthContext';
 
 interface NavItem {
   path: string;
@@ -73,9 +76,10 @@ export default function DashboardLayout() {
             </h2>
           </div>
 
-          {/* Wallet Button - Far Right */}
+          {/* User Menu & Wallet Button - Far Right */}
           <div className="flex items-center gap-4">
-            <WalletButton />
+            <UserMenu />
+            <WalletSelector />
           </div>
         </header>
 

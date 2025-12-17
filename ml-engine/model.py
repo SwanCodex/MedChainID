@@ -1,8 +1,155 @@
+import io
+import os
+import re
+import json
+import cv2
 import numpy as np
-from typing import Tuple, Dict, Any
+import pytesseract
+from PIL import Image
+import google.generativeai as genai
+from typing import Dict, Any, Tuple
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Gemini configuration
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+# Tesseract path (Windows)
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+
+# --------------------------------------------------
+# IMAGE PRE-PROCESSING (OCR IMPROVEMENT)
+# --------------------------------------------------
+def preprocess_image(file_buffer: bytes):
+    image = Image.open(io.BytesIO(file_buffer))
+    img = np.array(image)
+
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gray = cv2.GaussianBlur(gray, (5, 5), 0)
+
+    thresh = cv2.adaptiveThreshold(
+        gray,
+        255,
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY,
+        11,
+        2
+    )
+    return thresh
+
+
+# --------------------------------------------------
+# PII REDACTION (PRIVACY LAYER)
+# --------------------------------------------------
+def redact_pii(text: str) -> str:
+    patterns = {
+        "PHONE": r"\b\d{10}\b",
+        "EMAIL": r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+",
+        "AADHAR": r"\b\d{4}\s?\d{4}\s?\d{4}\b",
+        "DOB": r"\b\d{2}/\d{2}/\d{4}\b"
+    }
+
+    for label, pattern in patterns.items():
+        text = re.sub(pattern, f"[REDACTED_{label}]", text)
+
+    return text
+
+
+# --------------------------------------------------
+# OFFLINE FALLBACK VERIFICATION
+# --------------------------------------------------
+def local_keyword_check(text: str, record_type: str) -> bool:
+    keyword_map = {
+        "Medicine Report": ["tablet", "mg", "batch", "expiry", "manufacturer"],
+        "Birth Certificate": ["birth", "date", "father", "mother"],
+        "Insurance Claim": ["policy", "claim", "amount", "insured"]
+    }
+
+    keywords = keyword_map.get(record_type, [])
+    score = sum(1 for k in keywords if k.lower() in text.lower())
+
+    return score >= max(1, len(keywords) // 2)
+
+
+# --------------------------------------------------
+# MAIN VERIFICATION FUNCTION
+# --------------------------------------------------
+def verify_document_with_ai(file_buffer: bytes, record_type: str):
+    try:
+        # ---- OCR Stage ----
+        processed_img = preprocess_image(file_buffer)
+        ocr_text = pytesseract.image_to_string(processed_img)
+
+        if len(ocr_text.strip()) < 5:
+            return {
+                "verified": False,
+                "confidence": 0.0,
+                "message": "Document unreadable or empty",
+                "risk_flags": ["Low OCR confidence"]
+            }
+
+        # ---- Privacy Stage ----
+        ocr_text = redact_pii(ocr_text)
+
+        # ---- Gemini AI Stage ----
+        model = genai.GenerativeModel("gemini-2.5-flash")
+
+        prompt = f"""
+        You are an expert forensic document analyst.
+
+        CLAIMED DOCUMENT TYPE:
+        "{record_type}"
+
+        OCR TEXT (PII REDACTED):
+        \"\"\"{ocr_text[:3000]}\"\"\"
+
+        TASK:
+        - Validate if the document matches the claimed type
+        - Ignore OCR spelling errors
+        - Identify suspicious patterns
+
+        OUTPUT STRICT JSON:
+        {{
+            "is_authentic": boolean,
+            "confidence": float,
+            "summary": "short explanation",
+            "risk_flags": ["issues"]
+        }}
+        """
+
+        response = model.generate_content(
+            prompt,
+            generation_config={"response_mime_type": "application/json"}
+        )
+
+        analysis = json.loads(response.text)
+
+        return {
+            "verified": analysis.get("is_authentic", False),
+            "confidence": analysis.get("confidence", 0.0),
+            "message": analysis.get("summary", "Verification complete"),
+            "risk_flags": analysis.get("risk_flags", [])
+        }
+
+    # ---- HYBRID FALLBACK ----
+    except Exception as e:
+        print(f"Gemini failed: {e}")
+
+        fallback = local_keyword_check(ocr_text, record_type)
+
+        return {
+            "verified": fallback,
+            "confidence": 0.4,
+            "message": "Fallback keyword-based verification used",
+            "risk_flags": ["AI unavailable"]
+        }
+
 
 def detect_anomaly(document_data: Dict[str, Any]) -> Tuple[bool, float, str]:
     """
+
     Detect anomalies in medical documents using simple heuristics.
     In production, this would use a trained ML model.
     
