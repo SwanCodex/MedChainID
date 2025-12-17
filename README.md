@@ -389,5 +389,3 @@ Built for [Hackathon Name] by [Your Team]
 **⚠️ Disclaimer**: This is a hackathon MVP. Do not use in production without proper security audits and compliance reviews.
 
 ---
-
-Made with ❤️ for a healthier, more transparent healthcare system
