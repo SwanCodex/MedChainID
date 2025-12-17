@@ -1,151 +1,452 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import multer from 'multer';
-import { uploadToIPFS } from './ipfs.js';
-import { encryptFile, generateHash } from './encryption.js';
+/**
+ * server.js
+ * Main Express server for MedChainID Backend
+ * 
+ * Primary Endpoint: POST /api/upload
+ * 
+ * Flow:
+ * 1. Receive file from frontend
+ * 2. Validate file exists
+ * 3. Generate SHA-256 hash of original file (for blockchain)
+ * 4. Extract text from PDF (if applicable)
+ * 5. Send text to ML service for fraud detection analysis
+ * 6. Encrypt original file buffer with AES-256-CBC
+ * 7. Upload encrypted buffer to IPFS via Pinata
+ * 8. Return hash, IPFS CID, and ML risk analysis to frontend
+ * 
+ * Security: NEVER upload unencrypted files to IPFS
+ */
 
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const multer = require('multer');
+const axios = require('axios');
+const pdfParse = require('pdf-parse');
+
+// Import utility modules
+const { encryptBuffer, generateHash, verifyHash } = require('./utils/encryption');
+const { uploadToPinata, getFromIPFS } = require('./utils/ipfs');
+
+// Load environment variables
 dotenv.config();
 
+// Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 5000;
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5000';
 
-// Middleware
+// ============================================
+// Middleware Configuration
+// ============================================
+
+// CORS - Allow frontend to make requests
 app.use(cors({
     origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
 
-// Configure multer for file uploads (memory storage)
-const storage = multer.memoryStorage();
-const upload = multer({ 
-    storage,
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+// Body parsers
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Request logging middleware
+app.use((req, res, next) => {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] ${req.method} ${req.path}`);
+    next();
 });
 
-// Health check endpoint
+// ============================================
+// File Upload Configuration (Multer)
+// ============================================
+
+// Use memory storage (files stored in RAM as Buffer)
+const storage = multer.memoryStorage();
+
+// File filter - accept only PDFs and images
+const fileFilter = (req, file, cb) => {
+    const allowedTypes = [
+        'application/pdf',
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/gif'
+    ];
+    
+    if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Invalid file type. Only PDF and images are allowed.'), false);
+    }
+};
+
+// Multer configuration
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: {
+        fileSize: (process.env.MAX_FILE_SIZE || 10) * 1024 * 1024 // Default 10MB
+    }
+});
+
+// ============================================
+// Helper Functions
+// ============================================
+
+/**
+ * Extract text from PDF buffer
+ * @param {Buffer} buffer - PDF file buffer
+ * @returns {Promise<string>} - Extracted text
+ */
+async function extractTextFromPDF(buffer) {
+    try {
+        const data = await pdfParse(buffer);
+        return data.text;
+    } catch (error) {
+        console.error('❌ PDF text extraction failed:', error.message);
+        throw new Error('Failed to extract text from PDF');
+    }
+}
+
+/**
+ * Analyze document with ML service
+ * @param {string} text - Extracted document text
+ * @param {string} filename - Original filename
+ * @returns {Promise<object>} - ML analysis result
+ */
+async function analyzeWithML(text, filename) {
+    try {
+        console.log(`🤖 Sending to ML service: ${ML_SERVICE_URL}/analyze`);
+        console.log(`   Text length: ${text.length} characters`);
+
+        const response = await axios.post(`${ML_SERVICE_URL}/analyze`, {
+            text: text,
+            filename: filename,
+            timestamp: new Date().toISOString()
+        }, {
+            timeout: 30000, // 30 second timeout
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const result = response.data;
+        
+        console.log('✅ ML Analysis Complete:');
+        console.log(`   Risk Score: ${result.score || result.risk_score || 'N/A'}`);
+        console.log(`   Verdict: ${result.verdict || 'N/A'}`);
+
+        return {
+            score: result.score || result.risk_score || 0,
+            verdict: result.verdict || 'UNKNOWN',
+            details: result.details || result.analysis || 'No details available'
+        };
+
+    } catch (error) {
+        console.error('❌ ML service error:', error.message);
+        
+        // If ML service is down, return default safe values
+        console.warn('⚠️  ML service unavailable - using default risk assessment');
+        return {
+            score: 50,
+            verdict: 'ML_SERVICE_UNAVAILABLE',
+            details: 'ML service could not be reached. Manual review recommended.'
+        };
+    }
+}
+
+// ============================================
+// API Routes
+// ============================================
+
+/**
+ * Health check endpoint
+ * GET /api/health
+ */
 app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: 'ok', 
-        message: 'MedChainID Backend is running',
-        timestamp: new Date().toISOString()
+    res.json({
+        status: 'ok',
+        service: 'MedChainID Backend',
+        version: '1.0.0',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development'
     });
 });
 
 /**
- * Upload and process medical document
- * 1. Receives file from frontend
- * 2. Generates SHA-256 hash
- * 3. Encrypts the file with AES-256
- * 4. Uploads encrypted file to IPFS
- * 5. Returns hash and IPFS CID to frontend
+ * Main upload endpoint - THE CORE OF THE BACKEND
+ * POST /api/upload
+ * 
+ * Request: multipart/form-data with 'document' file field
+ * Response: { success, docHash, ipfsCid, riskAnalysis }
  */
 app.post('/api/upload', upload.single('document'), async (req, res) => {
+    const startTime = Date.now();
+    
     try {
+        // ===== STEP 1: VALIDATION =====
         if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' });
+            return res.status(400).json({
+                success: false,
+                error: 'No file uploaded. Please attach a document.'
+            });
         }
 
-        const { recordType } = req.body;
-        if (!recordType) {
-            return res.status(400).json({ error: 'Record type is required' });
+        const { originalname, mimetype, size, buffer } = req.file;
+        
+        console.log('\n📄 Processing Document Upload');
+        console.log('================================');
+        console.log(`   Filename: ${originalname}`);
+        console.log(`   MIME Type: ${mimetype}`);
+        console.log(`   Size: ${(size / 1024).toFixed(2)} KB`);
+        console.log('================================\n');
+
+        // ===== STEP 2: GENERATE HASH =====
+        console.log('🔐 Step 1/5: Generating SHA-256 hash...');
+        const docHash = generateHash(buffer);
+        console.log(`   Hash: ${docHash.substring(0, 20)}...${docHash.substring(docHash.length - 10)}`);
+
+        // ===== STEP 3: TEXT EXTRACTION (if PDF) =====
+        let extractedText = '';
+        let riskAnalysis = null;
+
+        if (mimetype === 'application/pdf') {
+            console.log('\n📝 Step 2/5: Extracting text from PDF...');
+            try {
+                extractedText = await extractTextFromPDF(buffer);
+                console.log(`   Extracted ${extractedText.length} characters`);
+                console.log(`   Preview: ${extractedText.substring(0, 100)}...`);
+            } catch (error) {
+                console.warn('⚠️  Could not extract text from PDF, skipping ML analysis');
+            }
+        } else {
+            console.log('\n⏭️  Step 2/5: Skipping text extraction (not a PDF)');
         }
 
-        console.log(`Processing file: ${req.file.originalname}`);
-        console.log(`Record Type: ${recordType}`);
+        // ===== STEP 4: ML FRAUD ANALYSIS =====
+        if (extractedText && extractedText.length > 10) {
+            console.log('\n🤖 Step 3/5: Running ML fraud detection...');
+            riskAnalysis = await analyzeWithML(extractedText, originalname);
+        } else {
+            console.log('\n⏭️  Step 3/5: Skipping ML analysis (no text extracted)');
+            riskAnalysis = {
+                score: 0,
+                verdict: 'NO_TEXT_EXTRACTED',
+                details: 'Document is an image or text extraction failed'
+            };
+        }
 
-        // Step 1: Generate SHA-256 hash of original file
-        const documentHash = generateHash(req.file.buffer);
-        console.log(`Generated Hash: ${documentHash}`);
+        // ===== STEP 5: ENCRYPTION =====
+        console.log('\n🔒 Step 4/5: Encrypting file with AES-256-CBC...');
+        const encryptedBuffer = encryptBuffer(buffer);
+        console.log(`   Original: ${size} bytes`);
+        console.log(`   Encrypted: ${encryptedBuffer.length} bytes`);
 
-        // Step 2: Encrypt the file
-        const encryptedBuffer = encryptFile(req.file.buffer);
-        console.log('File encrypted successfully');
+        // ===== STEP 6: IPFS UPLOAD =====
+        console.log('\n☁️  Step 5/5: Uploading to IPFS via Pinata...');
+        const ipfsCid = await uploadToPinata(encryptedBuffer, originalname);
+        console.log(`   IPFS CID: ${ipfsCid}`);
 
-        // Step 3: Upload encrypted file to IPFS
-        const ipfsCID = await uploadToIPFS(
-            encryptedBuffer,
-            req.file.originalname,
-            recordType
-        );
-        console.log(`Uploaded to IPFS: ${ipfsCID}`);
+        // ===== SUCCESS RESPONSE =====
+        const processingTime = Date.now() - startTime;
+        console.log(`\n✅ Upload Complete in ${processingTime}ms\n`);
 
-        // Step 4: Return hash and CID to frontend
         res.json({
             success: true,
-            data: {
-                documentHash,
-                ipfsCID,
-                fileName: req.file.originalname,
-                recordType,
-                fileSize: req.file.size,
+            docHash: docHash,
+            ipfsCid: ipfsCid,
+            riskAnalysis: riskAnalysis,
+            metadata: {
+                filename: originalname,
+                fileSize: size,
+                mimeType: mimetype,
+                processingTime: `${processingTime}ms`,
                 timestamp: new Date().toISOString()
             }
         });
 
     } catch (error) {
-        console.error('Upload error:', error);
-        res.status(500).json({ 
+        const processingTime = Date.now() - startTime;
+        console.error('\n❌ Upload Failed:', error.message);
+        console.error(`   Failed after ${processingTime}ms\n`);
+
+        res.status(500).json({
+            success: false,
             error: 'Failed to process document',
-            message: error.message 
+            message: error.message,
+            timestamp: new Date().toISOString()
         });
     }
 });
 
 /**
- * Verify document integrity
- * Allows users to upload a file and check if it matches a known hash
+ * Verify document hash endpoint
+ * POST /api/verify
+ * 
+ * Request: multipart/form-data with 'document' file and 'expectedHash' field
+ * Response: { valid, hash, message }
  */
 app.post('/api/verify', upload.single('document'), (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' });
+            return res.status(400).json({
+                success: false,
+                error: 'No file uploaded'
+            });
         }
 
         const { expectedHash } = req.body;
         if (!expectedHash) {
-            return res.status(400).json({ error: 'Expected hash is required' });
+            return res.status(400).json({
+                success: false,
+                error: 'Expected hash is required'
+            });
         }
 
         const actualHash = generateHash(req.file.buffer);
-        const isValid = actualHash === expectedHash;
+        const isValid = verifyHash(req.file.buffer, expectedHash);
 
         res.json({
             success: true,
-            data: {
-                isValid,
-                actualHash,
-                expectedHash,
-                message: isValid ? 'Document is authentic' : 'Document has been tampered with'
-            }
+            valid: isValid,
+            actualHash: actualHash,
+            expectedHash: expectedHash,
+            message: isValid 
+                ? 'Document verified successfully' 
+                : 'Document hash mismatch - file may be tampered'
         });
 
     } catch (error) {
         console.error('Verification error:', error);
-        res.status(500).json({ 
-            error: 'Failed to verify document',
-            message: error.message 
+        res.status(500).json({
+            success: false,
+            error: 'Verification failed',
+            message: error.message
         });
     }
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ 
-        error: 'Internal server error',
-        message: err.message 
+/**
+ * Download and decrypt document from IPFS
+ * GET /api/download/:cid
+ * 
+ * Note: Requires encryption key - only authorized parties can decrypt
+ */
+app.get('/api/download/:cid', async (req, res) => {
+    try {
+        const { cid } = req.params;
+
+        if (!cid) {
+            return res.status(400).json({
+                success: false,
+                error: 'IPFS CID is required'
+            });
+        }
+
+        console.log(`📥 Downloading from IPFS: ${cid}`);
+
+        // Get encrypted file from IPFS
+        const encryptedBuffer = await getFromIPFS(cid);
+
+        // Note: In production, add authorization check here
+        // Only authorized users should be able to decrypt files
+
+        // Return encrypted buffer (frontend will decrypt if they have the key)
+        res.set({
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': `attachment; filename="encrypted_${cid}"`
+        });
+
+        res.send(encryptedBuffer);
+
+    } catch (error) {
+        console.error('Download error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Download failed',
+            message: error.message
+        });
+    }
+});
+
+// ============================================
+// Error Handling Middleware
+// ============================================
+
+// Handle 404 - Route not found
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        error: 'Route not found',
+        path: req.path,
+        method: req.method
     });
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`🏥 MedChainID Backend Server`);
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
-    console.log(`📡 CORS enabled for: ${process.env.CORS_ORIGIN}`);
-    console.log(`⛓️  Aptos Network: ${process.env.APTOS_NETWORK}`);
+// Global error handler
+app.use((err, req, res, next) => {
+    console.error('❌ Global Error Handler:', err);
+
+    // Multer errors
+    if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({
+                success: false,
+                error: 'File too large',
+                message: `Maximum file size is ${process.env.MAX_FILE_SIZE || 10}MB`
+            });
+        }
+        return res.status(400).json({
+            success: false,
+            error: 'File upload error',
+            message: err.message
+        });
+    }
+
+    // Other errors
+    res.status(err.status || 500).json({
+        success: false,
+        error: err.message || 'Internal server error',
+        ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    });
 });
 
-export default app;
+// ============================================
+// Start Server
+// ============================================
+
+app.listen(PORT, () => {
+    console.log('\n');
+    console.log('═══════════════════════════════════════════════════');
+    console.log('🏥  MedChainID Backend Server');
+    console.log('═══════════════════════════════════════════════════');
+    console.log(`📡 Server running on: http://localhost:${PORT}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🤖 ML Service: ${ML_SERVICE_URL}`);
+    console.log(`📦 Max File Size: ${process.env.MAX_FILE_SIZE || 10}MB`);
+    console.log('═══════════════════════════════════════════════════');
+    console.log('\n✅ Server is ready to accept requests\n');
+    console.log('Available Endpoints:');
+    console.log('  GET  /api/health');
+    console.log('  POST /api/upload');
+    console.log('  POST /api/verify');
+    console.log('  GET  /api/download/:cid');
+    console.log('\n');
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('\n⚠️  SIGTERM received. Shutting down gracefully...');
+    process.exit(0);
+});
+
+process.on('SIGINT', () => {
+    console.log('\n⚠️  SIGINT received. Shutting down gracefully...');
+    process.exit(0);
+});
+
+module.exports = app;

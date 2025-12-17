@@ -1,39 +1,25 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+/**
+ * App.tsx
+ * Main application entry point
+ * Minimalist dark mode dashboard with wallet integration
+ */
+
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { WalletProvider } from './components/WalletProvider';
-import Dashboard from './pages/Dashboard';
-import Issuer from './pages/Issuer';
-import Verifier from './pages/Verifier';
-import './App.css';
+import DashboardLayout from './components/DashboardLayout';
+import IssueRecordPage from './pages/IssueRecordPage';
+import HistoryPage from './pages/HistoryPage';
 
 function App() {
   return (
     <WalletProvider>
       <Router>
-        <div className="app">
-          <header className="app-header">
-            <div className="header-content">
-              <h1>🏥 MedChainID</h1>
-              <p>Decentralized Medical Record Verification</p>
-            </div>
-            <nav className="nav">
-              <Link to="/">Dashboard</Link>
-              <Link to="/issuer">Issue Token</Link>
-              <Link to="/verifier">Verify Token</Link>
-            </nav>
-          </header>
-
-          <main className="app-main">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/issuer" element={<Issuer />} />
-              <Route path="/verifier" element={<Verifier />} />
-            </Routes>
-          </main>
-
-          <footer className="app-footer">
-            <p>Built on Aptos Blockchain | Privacy-First Healthcare</p>
-          </footer>
-        </div>
+        <Routes>
+          <Route path="/" element={<DashboardLayout />}>
+            <Route index element={<IssueRecordPage />} />
+            <Route path="history" element={<HistoryPage />} />
+          </Route>
+        </Routes>
       </Router>
     </WalletProvider>
   );
