@@ -13,7 +13,13 @@ export async function uploadDocument(file: File, recordType: string) {
     },
   });
 
-  return response.data.data;
+  // Backend returns: { success, docHash, ipfsCid, riskAnalysis, metadata }
+  return {
+    documentHash: response.data.docHash,
+    ipfsCID: response.data.ipfsCid,
+    riskAnalysis: response.data.riskAnalysis,
+    metadata: response.data.metadata
+  };
 }
 
 export async function verifyDocument(file: File, expectedHash: string) {
@@ -27,5 +33,5 @@ export async function verifyDocument(file: File, expectedHash: string) {
     },
   });
 
-  return response.data.data;
+  return response.data;
 }

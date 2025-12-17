@@ -23,10 +23,14 @@ const dotenv = require('dotenv');
 const multer = require('multer');
 const axios = require('axios');
 const pdfParse = require('pdf-parse');
+const session = require('express-session');
+const cookieParser = require('cookie-parser');
 
 // Import utility modules
 const { encryptBuffer, generateHash, verifyHash } = require('./utils/encryption');
 const { uploadToPinata, getFromIPFS } = require('./utils/ipfs');
+const { passport } = require('./auth');
+const authRoutes = require('./authRoutes');
 
 // Load environment variables
 dotenv.config();
@@ -34,7 +38,7 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 5000;
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5000';
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5001';
 
 // ============================================
 // Middleware Configuration
@@ -51,6 +55,25 @@ app.use(cors({
 // Body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// Session configuration
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'your-session-secret-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    },
+  })
+);
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -119,10 +142,10 @@ async function extractTextFromPDF(buffer) {
  */
 async function analyzeWithML(text, filename) {
     try {
-        console.log(`🤖 Sending to ML service: ${ML_SERVICE_URL}/analyze`);
+        console.log(`🤖 Sending to ML service: ${ML_SERVICE_URL}/api/ocr-verify`);
         console.log(`   Text length: ${text.length} characters`);
 
-        const response = await axios.post(`${ML_SERVICE_URL}/analyze`, {
+        const response = await axios.post(`${ML_SERVICE_URL}/api/ocr-verify`, {
             text: text,
             filename: filename,
             timestamp: new Date().toISOString()
@@ -133,16 +156,18 @@ async function analyzeWithML(text, filename) {
             }
         });
 
-        const result = response.data;
+        const result = response.data.data || response.data;
         
         console.log('✅ ML Analysis Complete:');
-        console.log(`   Risk Score: ${result.score || result.risk_score || 'N/A'}`);
-        console.log(`   Verdict: ${result.verdict || 'N/A'}`);
+        console.log(`   Verified: ${result.verified || 'N/A'}`);
+        console.log(`   Confidence: ${result.confidence || 'N/A'}`);
+        console.log(`   Message: ${result.message || 'N/A'}`);
 
         return {
-            score: result.score || result.risk_score || 0,
-            verdict: result.verdict || 'UNKNOWN',
-            details: result.details || result.analysis || 'No details available'
+            verified: result.verified || false,
+            confidence: result.confidence || 0.5,
+            message: result.message || 'Analysis completed',
+            riskFlags: result.risk_flags || []
         };
 
     } catch (error) {
@@ -151,9 +176,10 @@ async function analyzeWithML(text, filename) {
         // If ML service is down, return default safe values
         console.warn('⚠️  ML service unavailable - using default risk assessment');
         return {
-            score: 50,
-            verdict: 'ML_SERVICE_UNAVAILABLE',
-            details: 'ML service could not be reached. Manual review recommended.'
+            verified: false,
+            confidence: 0.5,
+            message: 'ML service unavailable. Manual review recommended.',
+            riskFlags: ['ML_SERVICE_UNAVAILABLE']
         };
     }
 }
@@ -416,6 +442,12 @@ app.use((err, req, res, next) => {
 });
 
 // ============================================
+// Authentication Routes
+// ============================================
+
+app.use('/api/auth', authRoutes);
+
+// ============================================
 // Start Server
 // ============================================
 
@@ -428,6 +460,7 @@ app.listen(PORT, () => {
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🤖 ML Service: ${ML_SERVICE_URL}`);
     console.log(`📦 Max File Size: ${process.env.MAX_FILE_SIZE || 10}MB`);
+    console.log(`🔐 Google OAuth: ${process.env.GOOGLE_CLIENT_ID ? 'Enabled' : 'Not configured'}`);
     console.log('═══════════════════════════════════════════════════');
     console.log('\n✅ Server is ready to accept requests\n');
     console.log('Available Endpoints:');
