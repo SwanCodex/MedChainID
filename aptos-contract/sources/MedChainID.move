@@ -2,7 +2,8 @@ module medchain::MedChainID {
     use std::signer;
     use std::vector;
     use aptos_framework::event;
-    use aptos_framework::account; // <--- ADD THIS IMPORT
+    use aptos_framework::account;
+    use aptos_framework::timestamp;
 
     /// Error codes
     const E_NOT_INITIALIZED: u64 = 1;
@@ -11,11 +12,12 @@ module medchain::MedChainID {
     const E_UNAUTHORIZED: u64 = 4;
 
     /// Represents a single Medical Token
-    struct MedicalToken has key, store {
+    struct MedicalToken has key, store, copy, drop {
         token_id: u64,
         record_type: vector<u8>,
         document_hash: vector<u8>,
         ipfs_cid: vector<u8>,
+        patient_address: address,
         is_consumed: bool,
         issuer: address,
         timestamp: u64,
@@ -32,6 +34,7 @@ module medchain::MedChainID {
     struct MintEvent has drop, store {
         token_id: u64,
         issuer: address,
+        patient_address: address,
         timestamp: u64,
     }
 
@@ -58,6 +61,7 @@ module medchain::MedChainID {
     /// Mint a new medical token
     public entry fun mint_token(
         account: &signer,
+        patient_address: address,
         record_type: vector<u8>,
         document_hash: vector<u8>,
         ipfs_cid: vector<u8>,
@@ -69,13 +73,14 @@ module medchain::MedChainID {
 
         let registry = borrow_global_mut<TokenRegistry>(account_addr);
         let token_id = registry.next_token_id;
-        let timestamp = aptos_framework::timestamp::now_seconds();
+        let timestamp = timestamp::now_seconds();
 
         let token = MedicalToken {
             token_id,
             record_type,
             document_hash,
             ipfs_cid,
+            patient_address,
             is_consumed: false,
             issuer: account_addr,
             timestamp,
@@ -87,6 +92,7 @@ module medchain::MedChainID {
         event::emit_event(&mut registry.mint_events, MintEvent {
             token_id,
             issuer: account_addr,
+            patient_address,
             timestamp,
         });
     }
@@ -147,10 +153,7 @@ module medchain::MedChainID {
 
     // Get token details (view function)
     #[view]
-    public fun get_token_details(
-        issuer_addr: address,
-        token_id: u64
-    ): (vector<u8>, vector<u8>, vector<u8>, bool, address, u64) acquires TokenRegistry {
+    public fun get_token_details(issuer_addr: address, token_id: u64): (vector<u8>, vector<u8>, vector<u8>, address, bool, address, u64) acquires TokenRegistry {
         assert!(exists<TokenRegistry>(issuer_addr), E_NOT_INITIALIZED);
         let registry = borrow_global<TokenRegistry>(issuer_addr);
         let len = vector::length(&registry.tokens);
@@ -162,6 +165,7 @@ module medchain::MedChainID {
                     token.record_type,
                     token.document_hash,
                     token.ipfs_cid,
+                    token.patient_address,
                     token.is_consumed,
                     token.issuer,
                     token.timestamp
@@ -171,5 +175,15 @@ module medchain::MedChainID {
         };
 
         abort E_TOKEN_NOT_FOUND
+    }
+
+    // Get all tokens for an issuer (view function)
+    #[view]
+    public fun get_all_tokens(issuer_addr: address): vector<MedicalToken> acquires TokenRegistry {
+        if (!exists<TokenRegistry>(issuer_addr)) {
+            return vector::empty<MedicalToken>()
+        };
+        let registry = borrow_global<TokenRegistry>(issuer_addr);
+        registry.tokens
     }
 }

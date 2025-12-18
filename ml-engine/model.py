@@ -15,9 +15,21 @@ load_dotenv()
 # Gemini configuration
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# Tesseract path (Windows)
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+# ... imports ...
 
+# Tesseract Configuration
+# FIX: Do not hardcode Windows paths for production.
+# Check if running on Windows, otherwise trust system PATH.
+if os.name == 'nt':
+    # Only set specific path if on Windows and default is missing
+    possible_path = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    if os.path.exists(possible_path):
+        pytesseract.pytesseract.tesseract_cmd = possible_path
+else:
+    # On Linux/Docker, tesseract is usually in /usr/bin/tesseract (in PATH)
+    pass 
+
+# ... rest of the file ...
 
 # --------------------------------------------------
 # IMAGE PRE-PROCESSING (OCR IMPROVEMENT)

@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { verifyToken, getTokenDetails, consumeToken } from '../services/aptos';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import WalletButton from '../components/WalletButton';
 
 export default function Verifier() {
   const { connected, signAndSubmitTransaction } = useWallet();
+  const [searchParams] = useSearchParams();
   const [issuerAddress, setIssuerAddress] = useState('');
   const [tokenId, setTokenId] = useState('');
   const [loading, setLoading] = useState(false);
@@ -12,6 +14,57 @@ export default function Verifier() {
   const [consuming, setConsuming] = useState(false);
   const [tokenData, setTokenData] = useState<any>(null);
   const [error, setError] = useState('');
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [decrypting, setDecrypting] = useState(false);
+
+  // Handle URL-based decryption (for shared verification links)
+  useEffect(() => {
+    const cid = searchParams.get('cid');
+    // Extract key from hash fragment (e.g., #key=XYZ)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const key = hashParams.get('key');
+
+    if (cid && key) {
+      decryptAndShow(cid, key);
+    }
+  }, [searchParams]);
+
+  const decryptAndShow = async (cid: string, key: string) => {
+    setDecrypting(true);
+    setError('');
+    setImageUrl(null);
+
+    try {
+      console.log('🔓 Decrypting document from IPFS:', cid);
+
+      // Call backend endpoint to decrypt and return the image
+      // Note: Backend is trusted (Privacy Vault) for demo purposes
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/decrypt-view`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ cid, key }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to decrypt document');
+      }
+
+      // Get the decrypted image as a blob
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setImageUrl(url);
+
+      console.log('✅ Document decrypted and ready to display');
+    } catch (err: any) {
+      console.error('Decryption error:', err);
+      setError(err.message || 'Failed to decrypt document');
+    } finally {
+      setDecrypting(false);
+    }
+  };
 
   const handleVerify = async () => {
     if (!issuerAddress || !tokenId) {
@@ -87,6 +140,49 @@ export default function Verifier() {
   return (
     <div className="page-container">
       <h2>🔍 Verify Medical Token</h2>
+
+      {/* Image Display Section (for URL-based verification) */}
+      {(decrypting || imageUrl || (searchParams.get('cid') && !imageUrl && error)) && (
+        <div className="card" style={{ marginBottom: '2rem' }}>
+          <h3>📄 Medical Record Document</h3>
+          
+          {decrypting && (
+            <div style={{ textAlign: 'center', padding: '2rem' }}>
+              <div className="spinner"></div>
+              <p>Decrypting document securely...</p>
+            </div>
+          )}
+
+          {imageUrl && (
+            <div style={{ 
+              marginTop: '1rem',
+              border: '2px solid #e5e7eb',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              backgroundColor: '#f9fafb'
+            }}>
+              <img 
+                src={imageUrl} 
+                alt="Medical Record" 
+                style={{ 
+                  width: '100%',
+                  height: 'auto',
+                  display: 'block'
+                }}
+              />
+            </div>
+          )}
+
+          {!imageUrl && !decrypting && error && (
+            <div className="error-box" style={{ marginTop: '1rem' }}>
+              <p>❌ {error}</p>
+              <p style={{ fontSize: '0.9rem', marginTop: '0.5rem', opacity: 0.7 }}>
+                Make sure the verification link is complete and hasn't expired.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="card">
         <div className="form-group">

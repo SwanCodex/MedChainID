@@ -46,10 +46,15 @@ const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5001';
 
 // CORS - Allow frontend to make requests
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://localhost:5000'
+    ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    exposedHeaders: ['Set-Cookie']
 }));
 
 // Body parsers
@@ -399,6 +404,95 @@ app.get('/api/download/:cid', async (req, res) => {
     }
 });
 
+/**
+ * Decrypt and view document from IPFS
+ * POST /api/decrypt-view
+ * 
+ * Body: { cid: string, key: string }
+ * 
+ * Note: For demo/hackathon - backend decrypts with provided key
+ * In production, implement proper access control and key management
+ */
+app.post('/api/decrypt-view', async (req, res) => {
+    try {
+        const { cid, key } = req.body;
+
+        if (!cid || !key) {
+            return res.status(400).json({
+                success: false,
+                error: 'CID and decryption key are required'
+            });
+        }
+
+        console.log(`🔓 Decrypting document: ${cid}`);
+
+        // Get encrypted file from IPFS
+        const encryptedBuffer = await getFromIPFS(cid);
+
+        // Decrypt using provided key
+        // Note: In production, validate user authorization before decrypting
+        const crypto = require('crypto');
+        
+        // Validate key format
+        if (key.length !== 64) {
+            throw new Error('Invalid encryption key format (must be 64 hex characters)');
+        }
+        
+        // Extract IV from encrypted buffer
+        const IV_LENGTH = 16;
+        if (encryptedBuffer.length < IV_LENGTH) {
+            throw new Error('Invalid encrypted buffer');
+        }
+        
+        const iv = encryptedBuffer.slice(0, IV_LENGTH);
+        const encryptedData = encryptedBuffer.slice(IV_LENGTH);
+        
+        // Decrypt with provided key
+        const keyBuffer = Buffer.from(key, 'hex');
+        const decipher = crypto.createDecipheriv('aes-256-cbc', keyBuffer, iv);
+        
+        const decryptedBuffer = Buffer.concat([
+            decipher.update(encryptedData),
+            decipher.final()
+        ]);
+
+        console.log(`✅ Document decrypted: ${decryptedBuffer.length} bytes`);
+
+        // Detect content type from buffer (simple detection)
+        let contentType = 'application/octet-stream';
+        if (decryptedBuffer[0] === 0xFF && decryptedBuffer[1] === 0xD8) {
+            contentType = 'image/jpeg';
+        } else if (decryptedBuffer[0] === 0x89 && decryptedBuffer[1] === 0x50) {
+            contentType = 'image/png';
+        } else if (decryptedBuffer[0] === 0x25 && decryptedBuffer[1] === 0x50) {
+            contentType = 'application/pdf';
+        }
+
+        // Return decrypted document
+        res.set({
+            'Content-Type': contentType,
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+            'Pragma': 'no-cache'
+        });
+
+        res.send(decryptedBuffer);
+
+    } catch (error) {
+        console.error('Decrypt-view error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Decryption failed',
+            message: error.message
+        });
+    }
+});
+
+// ============================================
+// Authentication Routes
+// ============================================
+
+app.use('/api/auth', authRoutes);
+
 // ============================================
 // Error Handling Middleware
 // ============================================
@@ -442,12 +536,6 @@ app.use((err, req, res, next) => {
 });
 
 // ============================================
-// Authentication Routes
-// ============================================
-
-app.use('/api/auth', authRoutes);
-
-// ============================================
 // Start Server
 // ============================================
 
@@ -468,6 +556,8 @@ app.listen(PORT, () => {
     console.log('  POST /api/upload');
     console.log('  POST /api/verify');
     console.log('  GET  /api/download/:cid');
+    console.log('  POST /api/decrypt-view');
+    console.log('  *    /api/auth/*');
     console.log('\n');
 });
 

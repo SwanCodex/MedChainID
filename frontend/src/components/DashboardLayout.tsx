@@ -18,6 +18,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { path: '/', label: 'Issue Record', icon: '📝' },
+  { path: '/my-records', label: 'My Records', icon: '👤' },
   { path: '/history', label: 'History', icon: '📊' },
 ];
 
