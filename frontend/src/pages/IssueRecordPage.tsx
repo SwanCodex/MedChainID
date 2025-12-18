@@ -89,14 +89,14 @@ export default function IssueRecordPage() {
       const txResult = await mintToken(
         signAndSubmitTransaction,
         recordType,
-        uploadResult.data.documentHash,
-        uploadResult.data.ipfsCID,
+        uploadResult.documentHash,
+        uploadResult.ipfsCID,
         patientAddress
       );
       console.log('✅ Transaction result:', txResult);
 
       setResult({
-        ...uploadResult.data,
+        ...uploadResult,
         transactionHash: txResult,
         patientAddress,
       });

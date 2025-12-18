@@ -4,8 +4,8 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-# Deployed contract address
-medchain = "0xfdb11b3940120057998fc39463745d3e3d0342449fe85f324ef7a512c5ac9004" 
+# Deployed contract address (v2 with patient_address support)
+medchain = "0x73e3d9850a0a7c4ddf06b770d779cc0654854575399830128364973c5e3d3e9e" 
 
 [dependencies.AptosFramework]
 git = "https://github.com/aptos-labs/aptos-core.git"
