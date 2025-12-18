@@ -22,6 +22,7 @@ export default function IssueRecordPage() {
   const { connected, signAndSubmitTransaction } = useWallet();
   const [file, setFile] = useState<File | null>(null);
   const [recordType, setRecordType] = useState(recordTypes[0]);
+  const [patientAddress, setPatientAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState('');
@@ -65,6 +66,16 @@ export default function IssueRecordPage() {
       return;
     }
 
+    if (!patientAddress) {
+      setError('Please enter the patient wallet address');
+      return;
+    }
+
+    if (!patientAddress.startsWith('0x') || patientAddress.length < 64) {
+      setError('Please enter a valid Aptos wallet address (starts with 0x and at least 64 characters)');
+      return;
+    }
+
     setLoading(true);
     setError('');
     setResult(null);
@@ -79,17 +90,20 @@ export default function IssueRecordPage() {
         signAndSubmitTransaction,
         recordType,
         uploadResult.data.documentHash,
-        uploadResult.data.ipfsCID
+        uploadResult.data.ipfsCID,
+        patientAddress
       );
       console.log('✅ Transaction result:', txResult);
 
       setResult({
         ...uploadResult.data,
         transactionHash: txResult,
+        patientAddress,
       });
 
       // Reset form
       setFile(null);
+      setPatientAddress('');
       if (fileInputRef.current) fileInputRef.current.value = '';
 
     } catch (err: any) {
@@ -129,7 +143,25 @@ export default function IssueRecordPage() {
           </p>
         </div>
 
-        {/* Form */}
+        {/* FoPatient Wallet Address */}
+          <div>
+            <label className="block text-sm font-medium mb-3">Patient Wallet Address</label>
+            <input
+              type="text"
+              placeholder="0x..."
+              value={patientAddress}
+              onChange={(e) => setPatientAddress(e.target.value)}
+              disabled={loading}
+              className="w-full bg-dark-surface border border-dark-border rounded-md px-4 py-3 text-sm font-mono
+                focus:outline-none focus:border-text-secondary transition-colors
+                disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+            <p className="text-xs text-text-muted mt-2">
+              The medical record will be cryptographically tied to this patient's wallet address
+            </p>
+          </div>
+
+          {/* rm */}
         <div className="p-8 space-y-6">
           {/* Record Type Selector */}
           <div>
@@ -212,13 +244,42 @@ export default function IssueRecordPage() {
 
           {/* Success Result */}
           {result && (
-            <div className="bg-green-950/30 border border-green-900/50 rounded-md p-4 space-y-2">
+            <div className="bg-green-950/30 border border-green-900/50 rounded-md p-4 space-y-3">
               <p className="text-sm font-medium text-green-400">✅ Token Minted Successfully!</p>
               <div className="space-y-1 text-xs text-text-secondary font-mono">
                 <p>Hash: {result.documentHash.substring(0, 20)}...</p>
                 <p>IPFS: {result.ipfsCID.substring(0, 20)}...</p>
                 <p>TX: {result.transactionHash?.substring(0, 20)}...</p>
               </div>
+              
+              {/* Shareable Verification Link */}
+              {result.encryptionKey && result.ipfsCID && (
+                <div className="pt-3 border-t border-green-900/30">
+                  <p className="text-sm font-medium text-green-400 mb-2">🔗 Shareable Verification Link</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={`${window.location.origin}/verifier?cid=${result.ipfsCID}#key=${result.encryptionKey}`}
+                      className="flex-1 px-3 py-2 bg-dark-surface border border-dark-border rounded text-xs font-mono"
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                    />
+                    <button
+                      onClick={() => {
+                        const link = `${window.location.origin}/verifier?cid=${result.ipfsCID}#key=${result.encryptionKey}`;
+                        navigator.clipboard.writeText(link);
+                        alert('Link copied to clipboard!');
+                      }}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
+                    >
+                      📋 Copy
+                    </button>
+                  </div>
+                  <p className="text-xs text-text-muted mt-2">
+                    Share this link with authorized verifiers to view the medical record securely.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
