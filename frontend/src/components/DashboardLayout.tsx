@@ -5,8 +5,7 @@
  */
 
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { WalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
-import "@aptos-labs/wallet-adapter-ant-design/dist/index.css";
+import WalletButton from './WalletButton';
 import UserMenu from './UserMenu';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -80,7 +79,7 @@ export default function DashboardLayout() {
           {/* User Menu & Wallet Button - Far Right */}
           <div className="flex items-center gap-4">
             <UserMenu />
-            <WalletSelector />
+            <WalletButton />
           </div>
         </header>
 

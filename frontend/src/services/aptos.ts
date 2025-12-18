@@ -25,15 +25,12 @@ export async function mintToken(
   const documentHashBytes = Array.from(fromHexString(documentHash));
   const ipfsCIDBytes = Array.from(new TextEncoder().encode(ipfsCID));
 
-  const transaction = {
-    data: {
-      function: `${CONTRACT_ADDRESS}::${MODULE_NAME}::mint_token`,
-      typeArguments: [],
-      functionArguments: [patientAddress, recordTypeBytes, documentHashBytes, ipfsCIDBytes],
-    },
+  const payload = {
+    function: `${CONTRACT_ADDRESS}::${MODULE_NAME}::mint_token`,
+    functionArguments: [patientAddress, recordTypeBytes, documentHashBytes, ipfsCIDBytes],
   };
 
-  const response = await signAndSubmitTransaction(transaction);
+  const response = await signAndSubmitTransaction(payload);
   await aptos.waitForTransaction({ transactionHash: response.hash });
   
   return response.hash;
@@ -80,15 +77,12 @@ export async function consumeToken(
   issuerAddress: string,
   tokenId: number
 ) {
-  const transaction = {
-    data: {
-      function: `${CONTRACT_ADDRESS}::${MODULE_NAME}::consume_token`,
-      typeArguments: [],
-      functionArguments: [issuerAddress, tokenId],
-    },
+  const payload = {
+    function: `${CONTRACT_ADDRESS}::${MODULE_NAME}::consume_token`,
+    functionArguments: [issuerAddress, tokenId],
   };
 
-  const response = await signAndSubmitTransaction(transaction);
+  const response = await signAndSubmitTransaction(payload);
   await aptos.waitForTransaction({ transactionHash: response.hash });
   
   return response.hash;

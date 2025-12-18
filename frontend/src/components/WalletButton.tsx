@@ -26,7 +26,10 @@ export default function WalletButton() {
 
   const handleConnect = async () => {
     console.log('🔍 Available wallets:', wallets);
+    console.log('🔍 Wallet count:', wallets?.length);
     console.log('🔍 Wallet names:', wallets?.map(w => w.name));
+    console.log('🔍 Petra in window:', !!(window as any).aptos || !!(window as any).petra);
+    console.log('🔍 isPetraAvailable:', isPetraAvailable);
     
     // Petra uses the Aptos Wallet Standard now
     // The adapter should detect it automatically
