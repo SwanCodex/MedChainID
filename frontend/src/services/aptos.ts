@@ -13,10 +13,6 @@ const fromHexString = (hexString: string) => {
   return new Uint8Array(cleanHex.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)) || []);
 };
 
-// Helper: Convert Uint8Array to Hex String
-const toHexString = (bytes: Uint8Array) =>
-  Array.from(bytes).reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '');
-
 export async function mintToken(
   signAndSubmitTransaction: any,
   recordType: string,

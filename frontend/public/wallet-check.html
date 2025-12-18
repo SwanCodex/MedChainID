@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Petra Wallet Check</title>
+    <style>
+        body {
+            font-family: system-ui;
+            padding: 2rem;
+            background: #0a0a0a;
+            color: white;
+        }
+        .status {
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+        }
+        .success { background: #1a4d1a; border: 1px solid #2d7a2d; }
+        .error { background: #4d1a1a; border: 1px solid #7a2d2d; }
+        code {
+            background: #1a1a1a;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Petra Wallet Detection</h1>
+    <div id="status">Checking...</div>
+
+    <script>
+        function checkWallet() {
+            const statusDiv = document.getElementById('status');
+            
+            // Check for Petra wallet
+            if (window.aptos) {
+                statusDiv.innerHTML = `
+                    <div class="status success">
+                        <h2>✅ Petra Wallet Detected!</h2>
+                        <p>Your Petra wallet extension is installed and working.</p>
+                        <p><strong>Next step:</strong> Refresh your app and try connecting again.</p>
+                    </div>
+                `;
+            } else {
+                statusDiv.innerHTML = `
+                    <div class="status error">
+                        <h2>❌ Petra Wallet Not Found</h2>
+                        <p>The Petra wallet extension is not installed or not enabled.</p>
+                        <h3>To fix this:</h3>
+                        <ol>
+                            <li>Install Petra Wallet from: <a href="https://petra.app/" target="_blank">https://petra.app/</a></li>
+                            <li>Or Chrome Web Store: <a href="https://chrome.google.com/webstore/detail/petra-aptos-wallet/ejjladinnckdgjemekebdpeokbikhfci" target="_blank">Install Extension</a></li>
+                            <li>Create or import your wallet</li>
+                            <li>Refresh this page to verify</li>
+                        </ol>
+                    </div>
+                `;
+            }
+
+            // Check window.petra as alternative
+            if (window.petra) {
+                statusDiv.innerHTML += `
+                    <div class="status success">
+                        <p><code>window.petra</code> object is available ✅</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Run check on load
+        setTimeout(checkWallet, 500);
+    </script>
+</body>
+</html>

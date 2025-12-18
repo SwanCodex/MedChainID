@@ -61,10 +61,10 @@ export default function PatientDashboard() {
 
       // 2. FILTER: Only keep tokens where patient_address == Me
       const myTokens = allTokens.filter(
-        (t: any) => t.patient_address === account.address
+        (t: any) => t.patient_address === account?.address
       );
 
-      console.log(`✅ Found ${myTokens.length} records for ${account.address}`);
+      console.log(`✅ Found ${myTokens.length} records for ${account?.address}`);
       setMyRecords(myTokens);
 
     } catch (e: any) {
@@ -128,7 +128,7 @@ export default function PatientDashboard() {
         <div>
           <h2 className="text-2xl font-bold mb-2">👤 My Medical Vault</h2>
           <p className="text-sm text-text-secondary">
-            Connected: {account?.address.substring(0, 6)}...{account?.address.substring(account.address.length - 4)}
+            Connected: {account?.address.substring(0, 6)}...{account?.address.substring(account?.address.length - 4)}
           </p>
         </div>
         <button

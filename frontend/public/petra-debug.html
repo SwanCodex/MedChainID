@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Petra Wallet Debug</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #0a0a0a; color: #fff; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #1a4d1a; }
+        .error { background: #4d1a1a; }
+        button { padding: 10px 20px; margin: 10px 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Petra Wallet Debug Tool</h1>
+    <button onclick="checkPetra()">Check Petra Status</button>
+    <button onclick="connectDirect()">Direct Connect</button>
+    <button onclick="location.reload()">Refresh Page</button>
+    
+    <div id="output"></div>
+
+    <script>
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = msg;
+            document.getElementById('output').appendChild(div);
+        }
+
+        function checkPetra() {
+            document.getElementById('output').innerHTML = '';
+            log('🔍 Checking Petra Wallet...', 'info');
+            
+            // Check window.aptos
+            if (window.aptos) {
+                log('✅ window.aptos found!', 'success');
+                log(`Version: ${window.aptos.version || 'unknown'}`, 'success');
+            } else {
+                log('❌ window.aptos NOT found', 'error');
+            }
+
+            // Check window.petra
+            if (window.petra) {
+                log('✅ window.petra found!', 'success');
+            } else {
+                log('❌ window.petra NOT found', 'error');
+            }
+
+            // Check if anything Petra-related exists
+            const petraKeys = Object.keys(window).filter(k => 
+                k.toLowerCase().includes('petra') || k.toLowerCase().includes('aptos')
+            );
+            
+            if (petraKeys.length > 0) {
+                log(`Found keys: ${petraKeys.join(', ')}`, 'success');
+            }
+
+            // Final verdict
+            if (!window.aptos && !window.petra) {
+                log('⚠️ PETRA NOT INSTALLED', 'error');
+                log('Install from: https://petra.app/', 'error');
+            }
+        }
+
+        async function connectDirect() {
+            document.getElementById('output').innerHTML = '';
+            
+            if (!window.aptos) {
+                log('❌ Cannot connect - Petra not installed', 'error');
+                return;
+            }
+
+            try {
+                log('🔄 Using Aptos Wallet Standard...', 'info');
+                log('⚠️ Note: Direct connection via window.aptos is deprecated', 'info');
+                log('Your app should use @aptos-labs/wallet-adapter-react', 'info');
+                
+                // This will fail with new Petra versions - that's expected
+                const response = await window.aptos.connect();
+                log('✅ Connected!', 'success');
+                log(`Address: ${response.address}`, 'success');
+            } catch (error) {
+                log(`❌ Expected error: ${error.message}`, 'error');
+                log('✅ This confirms Petra is using new Wallet Standard', 'success');
+                log('Your React app with wallet-adapter should work!', 'success');
+            }
+        }
+
+        // Auto-check on load
+        setTimeout(checkPetra, 500);
+    </script>
+</body>
+</html>

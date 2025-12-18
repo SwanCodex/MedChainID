@@ -1,14 +1,66 @@
 /**
  * WalletButton.tsx
- * Minimalist wallet connection button for dark mode
+ * Direct Petra wallet connection button (no modal needed)
  */
 
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
-import { WalletSelector } from '@aptos-labs/wallet-adapter-ant-design';
-import '@aptos-labs/wallet-adapter-ant-design/dist/index.css';
+import { useState, useEffect } from 'react';
 
 export default function WalletButton() {
-  const { connected, account, disconnect } = useWallet();
+  const { connected, account, disconnect, connect, wallets } = useWallet();
+  const [isPetraAvailable, setIsPetraAvailable] = useState(false);
+
+  useEffect(() => {
+    // Check if Petra is available
+    const checkPetra = () => {
+      const hasWindow = typeof window !== 'undefined';
+      const hasPetra = hasWindow && ((window as any).aptos || (window as any).petra);
+      setIsPetraAvailable(!!hasPetra);
+    };
+    
+    checkPetra();
+    // Check again after a delay in case extension loads late
+    const timer = setTimeout(checkPetra, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleConnect = async () => {
+    console.log('🔍 Available wallets:', wallets);
+    console.log('🔍 Wallet names:', wallets?.map(w => w.name));
+    
+    // Petra uses the Aptos Wallet Standard now
+    // The adapter should detect it automatically
+    if (!wallets || wallets.length === 0) {
+      // No wallets detected at all
+      if (isPetraAvailable) {
+        alert('⚠️ Petra is installed but not detected by the adapter.\n\nPlease:\n1. Refresh the page (Ctrl+R)\n2. Make sure Petra is on Devnet network\n3. Try connecting again\n\nIf issue persists, restart your browser.');
+      } else {
+        const shouldInstall = confirm(
+          '❌ No Aptos wallets found!\n\nPlease install Petra Wallet:\n1. Visit https://petra.app/\n2. Install the extension\n3. Create wallet and switch to Devnet\n4. Refresh this page\n\nClick OK to open Petra website.'
+        );
+        if (shouldInstall) {
+          window.open('https://petra.app/', '_blank');
+        }
+      }
+      return;
+    }
+
+    // Try to find and connect to any available wallet (Petra should be first)
+    const petraWallet = wallets.find(w => 
+      w.name === 'Petra' || 
+      w.name.toLowerCase().includes('petra') ||
+      w.name === 'Petra Wallet'
+    ) || wallets[0]; // Fallback to first available wallet
+
+    try {
+      console.log('✅ Connecting to:', petraWallet.name);
+      await connect(petraWallet.name);
+      console.log('✅ Connected successfully!');
+    } catch (error: any) {
+      console.error('❌ Connection error:', error);
+      alert(`Failed to connect: ${error.message || 'Unknown error'}\n\nPlease try:\n1. Refreshing the page\n2. Checking Petra is unlocked\n3. Making sure you're on Devnet network`);
+    }
+  };
 
   if (connected && account) {
     return (
@@ -32,8 +84,21 @@ export default function WalletButton() {
   }
 
   return (
-    <div className="wallet-selector-dark">
-      <WalletSelector />
+    <div>
+      <button
+        onClick={handleConnect}
+        className="bg-white text-black hover:bg-gray-200 rounded-md px-6 py-2 text-sm font-medium
+          transition-colors duration-150 flex items-center gap-2"
+      >
+        <span>🔐</span>
+        <span>Connect Petra Wallet</span>
+      </button>
+      {/* Debug info - remove in production */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="text-xs text-text-muted mt-2">
+          Wallets: {wallets?.length || 0} | Petra: {isPetraAvailable ? '✅' : '❌'}
+        </div>
+      )}
     </div>
   );
 }
