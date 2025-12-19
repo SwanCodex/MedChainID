@@ -1,166 +1,164 @@
-# 🏥 MedChainID
+# 🏥 MedChainID: Decentralized Medical Asset Vault
 
-**Decentralized Medical Record Verification on Aptos Blockchain**
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Aptos](https://img.shields.io/badge/Blockchain-Aptos-blue)](https://aptoslabs.com/)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green)](https://nodejs.org/)
+[![Python](https://img.shields.io/badge/Python-3.9+-blue)](https://www.python.org/)
 
-MedChainID is a privacy-first, tamper-resistant system for issuing and verifying one-time-use medical records. Built for the healthcare ecosystem to prevent fraud, ensure data integrity, and maintain patient privacy.
+**MedChainID** is a decentralized, AI-verified medical asset vault that allows patients to truly own their medical records as blockchain tokens on Aptos. The system combines blockchain immutability, AI verification, and zero-knowledge encryption to solve data silos, trust issues, and privacy risks in medical record management.
 
----
+## 🌟 Core Value Proposition
 
-## 🎯 Core Innovation
+- **✅ True Ownership**: Medical records are minted as tokens on Aptos blockchain, owned by patients (not hospitals)
+- **🤖 AI-Verified Authenticity**: Gemini AI verifies documents before they are ever stored, preventing fake records
+- **🔐 Zero-Knowledge Privacy**: Records are encrypted before IPFS storage; only key holders can decrypt
+- **🛡️ Anti-Fraud Protection**: Tokens can be marked as "consumed" to prevent insurance double-claiming
 
-**Separation of Data & Proof**
-- **Sensitive Data**: Encrypted and stored off-chain (IPFS)
-- **Cryptographic Proof**: Only document hashes stored on-chain (Aptos)
-- **One-Time-Use**: Tokens can be "consumed" to prevent double-claim fraud
-
----
-
-## 🏗️ Architecture
-
-```
-┌──────────────────────────────────────────────────────────┐
-│                      USER INTERFACE                       │
-│              React + TypeScript + Vite                    │
-│         (Petra Wallet Integration)                        │
-└────────────┬─────────────────────────────┬───────────────┘
-             │                             │
-             ▼                             ▼
-┌────────────────────────┐   ┌─────────────────────────────┐
-│   Backend (Node.js)    │   │   Aptos Blockchain (Move)   │
-│   - File Upload        │   │   - Token Registry          │
-│   - SHA-256 Hashing    │   │   - Mint Function           │
-│   - AES-256 Encryption │   │   - Consume Function        │
-│   - IPFS Pinning       │   │   - Verify Function         │
-└────────┬───────────────┘   └─────────────────────────────┘
-         │
-         ▼
-┌────────────────────────┐   ┌─────────────────────────────┐
-│   IPFS (Pinata)        │   │   ML Engine (Python)        │
-│   - Encrypted Storage  │   │   - Anomaly Detection       │
-│   - Content Delivery   │   │   - Fraud Analysis          │
-└────────────────────────┘   └─────────────────────────────┘
-```
-
----
-
-## 📁 Project Structure
+## 🏗️ System Architecture
 
 ```
-MedChainID/
-│
-├── aptos-contract/              # 📦 WEB3: Smart Contracts
-│   ├── Move.toml                # Package configuration
-│   └── sources/
-│       └── MedChainID.move      # Core smart contract logic
-│
-├── backend/                     # 🔒 BACKEND: Security & IPFS
-│   ├── package.json
-│   ├── .env.example
-│   └── src/
-│       ├── server.js            # Express API server
-│       ├── encryption.js        # AES-256 encryption
-│       └── ipfs.js              # Pinata integration
-│
-├── frontend/                    # 💻 CLIENT: UI & Wallet
-│   ├── package.json
-│   ├── vite.config.ts
-│   ├── .env.example
-│   └── src/
-│       ├── App.tsx              # Main application
-│       ├── components/          # Reusable components
-│       │   ├── WalletProvider.tsx
-│       │   └── WalletButton.tsx
-│       ├── pages/               # Route pages
-│       │   ├── Dashboard.tsx
-│       │   ├── Issuer.tsx
-│       │   └── Verifier.tsx
-│       └── services/            # API & Blockchain services
-│           ├── api.ts
-│           └── aptos.ts
-│
-├── ml-engine/                   # 🤖 ML: Fraud Detection
-│   ├── requirements.txt
-│   ├── app.py                   # Flask API
-│   ├── model.py                 # ML models
-│   └── .env.example
-│
-└── README.md                    # This file
+┌─────────────────────────────────────────────────────────────────┐
+│                         USER ROLES                              │
+│  [Hospital Admin] ────────────────────── [Patient]              │
+│         │                                    │                   │
+│         ▼                                    ▼                   │
+│  ┌─────────────────┐              ┌──────────────────┐          │
+│  │ Issuer Dashboard│              │Patient Dashboard │          │
+│  └─────────────────┘              └──────────────────┘          │
+│         │                                    │                   │
+│         └──────────────┬─────────────────────┘                  │
+│                        │                                         │
+│                        ▼                                         │
+│              ┌──────────────────┐                               │
+│              │  React Frontend  │◄─────── [Verifier Role]       │
+│              │  (TypeScript)    │                               │
+│              └──────────────────┘                               │
+│                        │                                         │
+│         ┌──────────────┼──────────────┐                         │
+│         │              │              │                         │
+│         ▼              ▼              ▼                         │
+│  ┌───────────┐  ┌───────────┐  ┌──────────────┐               │
+│  │  Aptos    │  │  Backend  │  │   Google     │               │
+│  │Blockchain │  │   API     │  │   OAuth      │               │
+│  │  (Move)   │  │ (Express) │  │              │               │
+│  └───────────┘  └───────────┘  └──────────────┘               │
+│                        │                                         │
+│         ┌──────────────┼──────────────┐                         │
+│         │              │              │                         │
+│         ▼              ▼              ▼                         │
+│  ┌───────────┐  ┌───────────┐  ┌──────────────┐               │
+│  │   IPFS    │  │ ML Engine │  │  Encryption  │               │
+│  │ (Pinata)  │  │  (Gemini) │  │  (AES-256)   │               │
+│  └───────────┘  └───────────┘  └──────────────┘               │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
----
+## 📁 Repository Structure
 
-## 🚀 Quick Start Guide
+```
+SSAY/
+├── aptos-contract/          # Aptos Move smart contract
+│   ├── sources/
+│   │   └── MedChainID.move  # Token minting & lifecycle management
+│   └── Move.toml
+│
+├── backend/                 # Node.js Express server
+│   ├── src/
+│   │   ├── server.js        # Main API server
+│   │   ├── auth.js          # Google OAuth configuration
+│   │   ├── authRoutes.js    # Authentication endpoints
+│   │   └── utils/
+│   │       ├── encryption.js # AES-256-CBC encryption
+│   │       └── ipfs.js       # Pinata IPFS integration
+│   └── package.json
+│
+├── ml-engine/               # Python Flask AI service
+│   ├── app.py               # Flask server
+│   ├── model.py             # Gemini AI verification
+│   └── requirements.txt
+│
+└── frontend/                # React TypeScript app
+    ├── src/
+    │   ├── App.tsx
+    │   ├── pages/
+    │   │   ├── IssueRecordPage.tsx
+    │   │   ├── PatientDashboard.tsx
+    │   │   └── Verifier.tsx
+    │   ├── services/
+    │   │   ├── api.ts       # Backend API client
+    │   │   └── aptos.ts     # Blockchain interaction
+    │   └── contexts/
+    │       └── AuthContext.tsx
+    └── package.json
+```
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-Before starting, ensure you have:
 - **Node.js** 18+ ([Download](https://nodejs.org/))
-- **Python** 3.9+ ([Download](https://python.org/))
-- **Aptos CLI** ([Installation Guide](https://aptos.dev/tools/install-cli/))
-- **Pinata Account** ([Sign Up](https://app.pinata.cloud/))
+- **Python** 3.9+ ([Download](https://www.python.org/))
+- **Aptos CLI** ([Installation Guide](https://aptos.dev/cli-tools/aptos-cli-tool/install-aptos-cli))
+- **Petra Wallet** ([Chrome Extension](https://petra.app/))
 
----
-
-### 1️⃣ Deploy Smart Contract
+### 1. Clone the Repository
 
 ```bash
-cd aptos-contract
-
-# Initialize Aptos account (first time only)
-aptos init --network devnet
-
-# Compile the Move contract
-aptos move compile
-
-# Run tests
-aptos move test
-
-# Deploy to devnet
-aptos move publish --named-addresses medchain=<YOUR_ADDRESS>
+git clone https://github.com/Aditya-Patil27/SSAY.git
+cd SSAY
 ```
 
-**Save your contract address!** You'll need it for the backend and frontend.
-
----
-
-### 2️⃣ Setup Backend
+### 2. Setup Backend
 
 ```bash
 cd backend
-
-# Install dependencies
 npm install
 
-# Create environment file
+# Create .env file from example
 cp .env.example .env
 
-# Edit .env and add:
-# - PINATA_API_KEY
-# - PINATA_SECRET_API_KEY
-# - ENCRYPTION_KEY (generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+# Generate encryption key
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+# Copy the output and set ENCRYPTION_KEY in .env
 
-# Start development server
-npm run dev
+# Get Pinata API keys from https://app.pinata.cloud/
+# Set PINATA_API_KEY and PINATA_SECRET_API_KEY in .env
+
+# Start backend server
+npm start
 ```
 
 Backend will run on `http://localhost:5000`
 
----
+### 3. Setup ML Engine
 
-### 3️⃣ Setup Frontend
+```bash
+cd ml-engine
+pip install -r requirements.txt
+
+# Create .env file from example
+cp .env.example .env
+
+# Get Gemini API key from https://makersuite.google.com/app/apikey
+# Set GEMINI_API_KEY in .env
+
+# Start ML service
+python app.py
+```
+
+ML Engine will run on `http://localhost:5001`
+
+### 4. Setup Frontend
 
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
 
-# Create environment file
+# Create .env file from example
 cp .env.example .env
 
-# Edit .env and add:
-# - VITE_CONTRACT_ADDRESS=<your_contract_address>
-# - VITE_APTOS_NETWORK=devnet
+# Set your deployed contract address in .env
+# VITE_CONTRACT_ADDRESS=0xYOUR_CONTRACT_ADDRESS
 
 # Start development server
 npm run dev
@@ -168,224 +166,240 @@ npm run dev
 
 Frontend will run on `http://localhost:5173`
 
----
-
-### 4️⃣ Setup ML Engine (Optional)
+### 5. Deploy Smart Contract
 
 ```bash
-cd ml-engine
+cd aptos-contract
 
-# Create virtual environment
-python -m venv venv
+# Initialize Aptos account
+aptos init --network devnet
 
-# Activate virtual environment
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
-source venv/bin/activate
+# Fund account (devnet only)
+aptos account fund-with-faucet --account <YOUR_ADDRESS>
 
-# Install dependencies
-pip install -r requirements.txt
+# Compile contract
+aptos move compile
 
-# Create environment file
-cp .env.example .env
+# Deploy contract
+aptos move publish --named-addresses medchain=<YOUR_ADDRESS>
 
-# Start Flask server
-python app.py
+# Copy the deployed contract address to frontend/.env
 ```
 
-ML Engine will run on `http://localhost:5001`
+## 📖 Component Documentation
 
----
+- **[Backend API Documentation](./backend/README.md)** - API endpoints, encryption, IPFS uploads
+- **[Smart Contract Documentation](./aptos-contract/README.md)** - Move contract, token lifecycle, blockchain interaction
+- **[ML Engine Documentation](./ml-engine/README.md)** - AI verification, fraud detection
+- **[Frontend Documentation](./frontend/README.md)** - React components, wallet integration, user flows
 
-## 💡 Usage Guide
+## 🔑 Key Features
 
-### For Issuers (Hospitals, Labs, Government)
+### 1. Document Upload & Encryption
+- Upload PDF or image medical records
+- Automatic AES-256-CBC encryption before storage
+- SHA-256 hash generation for blockchain verification
+- IPFS upload via Pinata for decentralized storage
 
-1. **Connect Wallet**: Click "Connect Wallet" and approve Petra wallet connection
-2. **Upload Document**: Select medical document (PDF, image, etc.)
-3. **Choose Record Type**: Select from Insurance Claim, Birth Certificate, Medicine Report, or Other
-4. **Issue Token**: Click "Issue Token" to:
-   - Generate SHA-256 hash
-   - Encrypt document with AES-256
-   - Upload to IPFS
-   - Mint token on Aptos blockchain
-5. **Save Token Info**: Store the token ID and issuer address for verification
+### 2. AI Fraud Detection
+- Gemini AI analyzes document content
+- Detects inconsistencies and potential fraud
+- Risk scoring and confidence metrics
+- Automatic fallback if ML service unavailable
 
-### For Verifiers (Insurance Companies, Pharmacies)
+### 3. Blockchain Token Minting
+- Medical records minted as tokens on Aptos
+- Immutable ownership by patient wallet
+- Token metadata includes document hash, IPFS CID, issuer info
+- Token lifecycle management (mint, verify, consume)
 
-1. **Enter Token Details**: Input issuer address and token ID
-2. **Verify Status**: Click "Verify Token" to check:
-   - Token validity (active/consumed)
-   - Document hash and IPFS CID
-   - Issuer information
-   - Timestamp
-3. **Consume Token** (if authorized): Click "Consume Token" to mark as used (one-time-use)
+### 4. Zero-Knowledge Verification
+- Verifiers can validate without seeing document
+- Encryption key required for viewing
+- Shareable verification links with embedded keys
+- No central authority controls access
 
----
+### 5. Anti-Fraud Token Consumption
+- Tokens can be marked as "consumed" (e.g., after insurance claim)
+- Prevents double-claiming and fraud
+- Only patient wallet can consume tokens
+- Irreversible consumption for audit trail
 
 ## 🔐 Security Features
 
-| Feature | Implementation | Purpose |
-|---------|---------------|---------|
-| **No PII on Chain** | Only hashes stored | Privacy protection |
-| **AES-256 Encryption** | Off-chain data encrypted | Data confidentiality |
-| **SHA-256 Hashing** | Document integrity proof | Tamper detection |
-| **One-Time-Use** | Consume mechanism | Fraud prevention |
-| **IPFS Storage** | Decentralized storage | Censorship resistance |
-| **Event Logging** | On-chain events | Audit trail |
-
----
-
-## 🛠️ Technology Stack
-
-**Blockchain Layer**
-- Aptos Blockchain (Move Language)
-- Petra Wallet Adapter
-
-**Backend Layer**
-- Node.js + Express
-- Crypto (AES-256, SHA-256)
-- Pinata SDK (IPFS)
-
-**Frontend Layer**
-- React 18 + TypeScript
-- Vite Build Tool
-- Aptos TypeScript SDK
-- Ant Design Components
-
-**ML Layer (Optional)**
-- Python + Flask
-- scikit-learn
-- NumPy + Pandas
-
----
-
-## 📊 Use Cases
-
-### 🏥 Insurance Claims
-- Issue verifiable claim tokens
-- Prevent double-claiming
-- Streamline approval process
-
-### 👶 Birth Certificates
-- Tamper-proof identity documents
-- Easy verification for schools/government
-- Lifetime validity tracking
-
-### 💊 Medicine Reports
-- Combat counterfeit drugs
-- Verify pharmaceutical authenticity
-- Track supply chain integrity
-
----
+- **Encryption**: AES-256-CBC with random IVs per file
+- **Hash Verification**: SHA-256 document hashing for tamper detection
+- **Access Control**: Only key holders can decrypt files
+- **Session Security**: HTTP-only cookies, secure sessions in production
+- **Input Validation**: File type restrictions, size limits
+- **CORS Protection**: Configured origins for API access
+- **No Plaintext Storage**: Files only stored encrypted on IPFS
 
 ## 🧪 Testing
 
-### Test Smart Contract
+### Backend Tests
+
+```bash
+cd backend
+npm test                 # Run all tests
+npm run test:watch       # Watch mode
+npm run test:e2e         # End-to-end tests
+```
+
+### Frontend Tests
+
+```bash
+cd frontend
+npm test
+```
+
+### Smart Contract Tests
+
 ```bash
 cd aptos-contract
 aptos move test
 ```
 
-### Test Backend API
-```bash
-cd backend
-npm run dev
+## 📊 API Endpoints
 
-# In another terminal
-curl http://localhost:5000/api/health
-```
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/health` | Health check |
+| POST | `/api/upload` | Upload & encrypt document |
+| POST | `/api/verify` | Verify document hash |
+| GET | `/api/download/:cid` | Download encrypted file |
+| POST | `/api/decrypt-view` | Decrypt & view document |
+| GET | `/api/auth/google` | Initiate Google OAuth |
+| GET | `/api/auth/google/callback` | OAuth callback |
+| GET | `/api/auth/status` | Check auth status |
+| POST | `/api/auth/logout` | Logout user |
 
-### Test Frontend
-```bash
-cd frontend
-npm run dev
-# Open http://localhost:5173
-```
+## 🛠️ Technology Stack
 
----
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| **Blockchain** | Aptos (Move) | Immutable ownership registry |
+| **Frontend** | React + TypeScript + Vite | User interface |
+| **Backend** | Node.js + Express | API gateway, encryption |
+| **AI** | Python + Flask + Gemini | Document verification |
+| **Storage** | IPFS (Pinata) | Decentralized file storage |
+| **Auth** | Google OAuth + JWT | Identity verification |
+| **Wallet** | Petra Wallet | Blockchain transactions |
+| **Styling** | Tailwind CSS | UI design |
 
-## 📝 Environment Variables
+## 🌐 Environment Variables
 
 ### Backend (.env)
 ```env
 PORT=5000
 NODE_ENV=development
 PINATA_API_KEY=your_pinata_api_key
-PINATA_SECRET_API_KEY=your_pinata_secret
-ENCRYPTION_KEY=your_32_byte_hex_key
-CORS_ORIGIN=http://localhost:5173
-APTOS_NETWORK=devnet
-APTOS_CONTRACT_ADDRESS=0xYOUR_ADDRESS
+PINATA_SECRET_API_KEY=your_pinata_secret_key
+ENCRYPTION_KEY=64_hex_characters
+ML_SERVICE_URL=http://localhost:5001
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+JWT_SECRET=your_jwt_secret
+SESSION_SECRET=your_session_secret
 ```
 
 ### Frontend (.env)
 ```env
 VITE_API_URL=http://localhost:5000/api
 VITE_APTOS_NETWORK=devnet
-VITE_CONTRACT_ADDRESS=0xYOUR_ADDRESS
+VITE_CONTRACT_ADDRESS=0xYOUR_CONTRACT_ADDRESS
 ```
 
 ### ML Engine (.env)
 ```env
 PORT=5001
+GEMINI_API_KEY=your_gemini_api_key
 DEBUG=True
-MODEL_VERSION=1.0
-ANOMALY_THRESHOLD=0.7
 ```
 
----
+## 📝 User Flows
 
-## 🚧 Known Limitations (MVP)
+### Hospital Issuer Flow
+1. Login with Google OAuth
+2. Upload medical record (PDF/image)
+3. AI verification runs automatically
+4. File encrypted with AES-256
+5. Encrypted file uploaded to IPFS
+6. Connect Petra wallet
+7. Mint token on Aptos blockchain
+8. Patient receives token at their wallet address
 
-- **Hardcoded Encryption Key**: Use environment variables only
-- **Single Issuer Model**: No multi-sig or role-based access
-- **Basic ML Model**: Uses heuristics, not trained models
-- **Devnet Only**: Not production-ready for mainnet
+### Patient Flow
+1. Connect Petra wallet
+2. View all medical tokens on blockchain
+3. Filter tokens by issuer or record type
+4. Click to decrypt and view document
+5. Share verification link with verifiers
+6. Consume token if needed (e.g., insurance claim)
 
----
+### Verifier Flow
+1. Receive verification link from patient
+2. Link contains IPFS CID + encryption key (in URL hash)
+3. Click "View Document" to decrypt
+4. Verify document authenticity
+5. Check blockchain for token consumption status
 
-## 🔮 Future Enhancements
+## 🚧 Known Limitations & Future Improvements
 
-- [ ] Multi-signature issuance for high-value documents
-- [ ] Role-based access control (RBAC)
-- [ ] Advanced ML models with transfer learning
-- [ ] Mobile app with QR scanning
-- [ ] Integration with national healthcare systems
-- [ ] Zero-knowledge proofs for enhanced privacy
-- [ ] Cross-chain compatibility
+### Current Limitations
+- Backend handles encryption (should be client-side for true zero-knowledge)
+- Single encryption key for all files (should be per-file keys)
+- No key rotation mechanism
+- Limited to devnet (not production-ready)
+- ML service is synchronous (should be async/queue-based)
 
----
+### Planned Improvements
+- Client-side encryption with patient-controlled keys
+- Key management system with rotation
+- Multi-signature support for sensitive operations
+- Indexer service for faster blockchain queries
+- Mobile app with biometric authentication
+- Support for multiple blockchains (Ethereum, Solana)
+- Advanced AI models with medical domain expertise
+- Compliance certifications (HIPAA, GDPR)
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## 📄 License
 
-MIT License - See LICENSE file for details
-
----
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 👥 Team
 
-Built for [Hackathon Name] by [Your Team]
-
----
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](#)
-- **Documentation**: [Wiki](#)
-- **Community**: [Discord](#)
-
----
+- **Aditya Patil** - [GitHub](https://github.com/Aditya-Patil27)
 
 ## 🙏 Acknowledgments
 
-- Aptos Foundation for blockchain infrastructure
-- Pinata for IPFS hosting
-- The open-source community
+- [Aptos Labs](https://aptoslabs.com/) - Blockchain infrastructure
+- [Pinata](https://pinata.cloud/) - IPFS pinning service
+- [Google AI](https://ai.google.dev/) - Gemini AI API
+- [Petra Wallet](https://petra.app/) - Aptos wallet
+
+## 📞 Support
+
+For support, please:
+- Open an issue on [GitHub](https://github.com/Aditya-Patil27/SSAY/issues)
+- Contact: [Your Email]
+
+## 🔗 Links
+
+- [Live Demo](https://your-demo-url.com)
+- [Documentation](https://your-docs-url.com)
+- [Video Demo](https://your-video-url.com)
 
 ---
 
-**⚠️ Disclaimer**: This is a hackathon MVP. Do not use in production without proper security audits and compliance reviews.
-
----
+**Built with ❤️ for hackathon by Team SSAY**

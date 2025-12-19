@@ -7,83 +7,188 @@ const MODULE_NAME = 'MedChainID';
 const config = new AptosConfig({ network: APTOS_NETWORK });
 const aptos = new Aptos(config);
 
-// Helper: Convert Hex String to Uint8Array (Browser compatible)
-const fromHexString = (hexString: string) => {
-  const cleanHex = hexString.startsWith('0x') ? hexString.slice(2) : hexString;
-  return new Uint8Array(cleanHex.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)) || []);
+/**
+ * Convert string to byte array for Move vector<u8>
+ */
+const stringToBytes = (str: string): number[] => {
+  return Array.from(new TextEncoder().encode(str));
 };
 
+/**
+ * Convert hex string to byte array for Move vector<u8>
+ */
+const hexToBytes = (hexString: string): number[] => {
+  const cleanHex = hexString.startsWith('0x') ? hexString.slice(2) : hexString;
+  const bytes: number[] = [];
+  for (let i = 0; i < cleanHex.length; i += 2) {
+    bytes.push(parseInt(cleanHex.substr(i, 2), 16));
+  }
+  return bytes;
+};
+
+/**
+ * Mint a new medical token on the blockchain
+ * 
+ * Move function signature:
+ * public entry fun mint_token(
+ *   account: &signer,
+ *   patient_address: address,
+ *   record_type: vector<u8>,
+ *   document_hash: vector<u8>,
+ *   ipfs_cid: vector<u8>,
+ * )
+ */
 export async function mintToken(
   signAndSubmitTransaction: any,
   recordType: string,
   documentHash: string,
   ipfsCID: string,
   patientAddress: string
-) {
-  // Convert data to byte arrays for the smart contract
-  const recordTypeBytes = Array.from(new TextEncoder().encode(recordType));
-  const documentHashBytes = Array.from(fromHexString(documentHash));
-  const ipfsCIDBytes = Array.from(new TextEncoder().encode(ipfsCID));
+): Promise<string> {
+  if (!CONTRACT_ADDRESS || CONTRACT_ADDRESS === '0xCAFE') {
+    throw new Error("VITE_CONTRACT_ADDRESS not set in .env");
+  }
 
+  console.log("⛓️ Preparing mint transaction...");
+  console.log("   Contract:", CONTRACT_ADDRESS);
+  console.log("   Patient:", patientAddress);
+  console.log("   Record Type:", recordType);
+  console.log("   Hash:", documentHash.substring(0, 20) + "...");
+  console.log("   IPFS CID:", ipfsCID);
+
+  // Convert to byte arrays as required by Move contract
+  const recordTypeBytes = stringToBytes(recordType);
+  const documentHashBytes = hexToBytes(documentHash);
+  const ipfsCIDBytes = stringToBytes(ipfsCID);
+
+  // Transaction structure for @aptos-labs/wallet-adapter-react v3.x
+  // Uses InputTransactionData format with 'data' wrapper
   const payload = {
-    function: `${CONTRACT_ADDRESS}::${MODULE_NAME}::mint_token`,
-    functionArguments: [patientAddress, recordTypeBytes, documentHashBytes, ipfsCIDBytes],
+    data: {
+      function: `${CONTRACT_ADDRESS}::${MODULE_NAME}::mint_token`,
+      typeArguments: [],
+      functionArguments: [
+        patientAddress,      // address
+        recordTypeBytes,     // vector<u8>
+        documentHashBytes,   // vector<u8>
+        ipfsCIDBytes,        // vector<u8>
+      ],
+    },
   };
 
-  const response = await signAndSubmitTransaction({ data: payload });
-  await aptos.waitForTransaction({ transactionHash: response.hash });
-  
-  return response.hash;
+  console.log("📝 Transaction payload:", JSON.stringify(payload, null, 2));
+
+  try {
+    const response = await signAndSubmitTransaction(payload);
+    
+    console.log("✅ Transaction submitted!");
+    console.log("   Response:", response);
+    
+    // Handle different response formats
+    const txHash = response.hash || response;
+    
+    // Wait for confirmation
+    await aptos.waitForTransaction({ transactionHash: txHash });
+    console.log("✅ Transaction confirmed on blockchain!");
+    
+    return txHash;
+  } catch (error: any) {
+    console.error("❌ Minting failed:", error);
+    
+    // Better error messages
+    if (error.message?.includes('INSUFFICIENT_BALANCE')) {
+      throw new Error('Insufficient APT. Get free tokens from https://aptos.dev/en/network/faucet');
+    }
+    if (error.message?.includes('rejected') || error.code === 4001) {
+      throw new Error('Transaction rejected by user');
+    }
+    if (error.message?.includes('MODULE_NOT_FOUND')) {
+      throw new Error(`Contract not found at ${CONTRACT_ADDRESS}. Make sure it's deployed on ${APTOS_NETWORK}.`);
+    }
+    
+    throw error;
+  }
 }
 
-export async function verifyToken(issuerAddress: string, tokenId: number): Promise<[boolean, string]> {
-  const result = await aptos.view({
-    payload: {
-      function: `${CONTRACT_ADDRESS}::${MODULE_NAME}::verify_token`,
-      typeArguments: [],
-      functionArguments: [issuerAddress, tokenId],
-    },
-  });
-
-  return result as [boolean, string];
+/**
+ * Verify if a token is valid and not consumed
+ */
+export async function verifyToken(
+  issuerAddress: string, 
+  tokenId: number
+): Promise<[boolean, string]> {
+  try {
+    const result = await aptos.view({
+      payload: {
+        function: `${CONTRACT_ADDRESS}::${MODULE_NAME}::verify_token`,
+        typeArguments: [],
+        functionArguments: [issuerAddress, tokenId],
+      },
+    });
+    return result as [boolean, string];
+  } catch (e) {
+    console.error("Verification failed:", e);
+    return [false, ""];
+  }
 }
 
+/**
+ * Get detailed information about a token
+ */
 export async function getTokenDetails(issuerAddress: string, tokenId: number) {
-  const result = await aptos.view({
-    payload: {
-      function: `${CONTRACT_ADDRESS}::${MODULE_NAME}::get_token_details`,
-      typeArguments: [],
-      functionArguments: [issuerAddress, tokenId],
-    },
-  });
+  try {
+    const result = await aptos.view({
+      payload: {
+        function: `${CONTRACT_ADDRESS}::${MODULE_NAME}::get_token_details`,
+        typeArguments: [],
+        functionArguments: [issuerAddress, tokenId],
+      },
+    });
 
-  // Aptos SDK returns vector<u8> as a Hex String (e.g. "0x68656c6c6f")
-  const [recordTypeHex, documentHashHex, ipfsCIDHex, isConsumed, issuer, timestamp] = result as any[];
-
-  return {
-    // Fix: Parse the Hex String -> Uint8Array -> Text
-    recordType: new TextDecoder().decode(fromHexString(recordTypeHex)),
-    // documentHash is already a hex string from the chain, just strip 0x if needed
-    documentHash: documentHashHex.startsWith('0x') ? documentHashHex.slice(2) : documentHashHex,
-    ipfsCID: new TextDecoder().decode(fromHexString(ipfsCIDHex)),
-    isConsumed,
-    issuer,
-    timestamp: Number(timestamp),
-  };
+    const [recordType, documentHash, ipfsCID, isConsumed, issuer, timestamp] = result as any[];
+    
+    // Decode byte arrays to strings
+    const decode = (bytes: any) => {
+      if (typeof bytes === 'string') return bytes;
+      try {
+        return new TextDecoder().decode(new Uint8Array(bytes));
+      } catch {
+        return String(bytes);
+      }
+    };
+    
+    return {
+      recordType: decode(recordType),
+      documentHash: typeof documentHash === 'string' ? documentHash : 
+        Array.from(new Uint8Array(documentHash)).map(b => b.toString(16).padStart(2, '0')).join(''),
+      ipfsCID: decode(ipfsCID),
+      isConsumed,
+      issuer,
+      timestamp: Number(timestamp),
+    };
+  } catch (e) {
+    console.error("Get details failed:", e);
+    throw e;
+  }
 }
 
+/**
+ * Consume a token (mark as used - one-time use)
+ */
 export async function consumeToken(
   signAndSubmitTransaction: any,
   issuerAddress: string,
   tokenId: number
-) {
-  const payload = {
-    function: `${CONTRACT_ADDRESS}::${MODULE_NAME}::consume_token`,
-    functionArguments: [issuerAddress, tokenId],
+): Promise<string> {
+  const transaction = {
+    data: {
+      function: `${CONTRACT_ADDRESS}::${MODULE_NAME}::consume_token` as `${string}::${string}::${string}`,
+      typeArguments: [],
+      functionArguments: [issuerAddress, tokenId],
+    },
   };
 
-  const response = await signAndSubmitTransaction({ data: payload });
+  const response = await signAndSubmitTransaction(transaction);
   await aptos.waitForTransaction({ transactionHash: response.hash });
-  
   return response.hash;
 }

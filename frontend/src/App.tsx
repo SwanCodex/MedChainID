@@ -1,19 +1,20 @@
 /**
  * App.tsx
  * Main application entry point
- * Minimalist dark mode dashboard with wallet and Google auth integration
+ * Modern navbar layout with proper routing
  */
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import DashboardLayout from './components/DashboardLayout';
+import Layout from './components/Layout';
 import IssueRecordPage from './pages/IssueRecordPage';
 import HistoryPage from './pages/HistoryPage';
 import PatientDashboard from './pages/PatientDashboard';
 import Verifier from './pages/Verifier';
 import LoginPage from './pages/LoginPage';
 import AuthCallback from './pages/AuthCallback';
+import DocumentsPage from './pages/DocumentsPage';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -37,21 +38,28 @@ function AppRoutes() {
   return (
     <Router>
       <Routes>
+        {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/verifier" element={<Verifier />} />
+        
+        {/* Protected Routes with Layout */}
         <Route
           path="/"
           element={
             <ProtectedRoute>
-              <DashboardLayout />
+              <Layout />
             </ProtectedRoute>
           }
         >
           <Route index element={<IssueRecordPage />} />
+          <Route path="patient" element={<PatientDashboard />} />
+          <Route path="verifier" element={<Verifier />} />
           <Route path="history" element={<HistoryPage />} />
-          <Route path="my-records" element={<PatientDashboard />} />
+          <Route path="documents" element={<DocumentsPage />} />
         </Route>
+        
+        {/* Catch all - redirect to home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

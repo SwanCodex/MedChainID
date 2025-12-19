@@ -1,9 +1,0 @@
-{
-  "status": "commited",
-  "type": "backend",
-  "scope": "codebase",
-  "localEndpoint": "http://localhost:5000",
-  "backendAuthType": "API key",
-  "backendApiKey": "GOOGLE_CLIENT_ID",
-  "backendApiValue": "155913911180-2g1g6is1j2tmkm2266u2h4bq6nvtm1ds.apps.googleusercontent.com"
-}

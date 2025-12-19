@@ -29,6 +29,18 @@ const cookieParser = require('cookie-parser');
 // Import utility modules
 const { encryptBuffer, generateHash, verifyHash } = require('./utils/encryption');
 const { uploadToPinata, getFromIPFS } = require('./utils/ipfs');
+const { 
+    saveDocument, 
+    getDocumentByHash,
+    getDocumentByCid,
+    getDocumentsByUploader,
+    getAllDocuments,
+    saveToken,
+    getTokensByPatient,
+    getTokensByIssuer,
+    getAllTokens,
+    getStatistics
+} = require('./utils/database');
 const { passport } = require('./auth');
 const authRoutes = require('./authRoutes');
 
@@ -38,7 +50,7 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 5000;
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5001';
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:5001';
 
 // ============================================
 // Middleware Configuration
@@ -125,6 +137,31 @@ const upload = multer({
 // ============================================
 
 /**
+ * Validate IPFS CID format
+ * @param {string} cid - IPFS Content ID to validate
+ * @returns {boolean} - True if valid CID format
+ */
+function isValidCID(cid) {
+    if (!cid || typeof cid !== 'string') return false;
+    // CIDv0: Starts with "Qm" and is 46 characters
+    // CIDv1: Starts with "b" and is longer
+    const cidv0Regex = /^Qm[1-9A-HJ-NP-Za-km-z]{44}$/;
+    const cidv1Regex = /^b[a-z2-7]{58,}$/;
+    return cidv0Regex.test(cid) || cidv1Regex.test(cid);
+}
+
+/**
+ * Sanitize record type string
+ * @param {string} recordType - Record type to sanitize
+ * @returns {string} - Sanitized record type
+ */
+function sanitizeRecordType(recordType) {
+    if (!recordType || typeof recordType !== 'string') return '';
+    // Remove any HTML tags and trim
+    return recordType.replace(/<[^>]*>/g, '').trim().substring(0, 100);
+}
+
+/**
  * Extract text from PDF buffer
  * @param {Buffer} buffer - PDF file buffer
  * @returns {Promise<string>} - Extracted text
@@ -194,18 +231,44 @@ async function analyzeWithML(text, filename) {
 // ============================================
 
 /**
- * Health check endpoint
+ * Health check endpoint with service dependency monitoring
  * GET /api/health
  */
-app.get('/api/health', (req, res) => {
-    res.json({
+app.get('/api/health', async (req, res) => {
+    const health = {
         status: 'ok',
         service: 'MedChainID Backend',
         version: '1.0.0',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        environment: process.env.NODE_ENV || 'development'
-    });
+        environment: process.env.NODE_ENV || 'development',
+        dependencies: {
+            mlService: { status: 'unknown', url: ML_SERVICE_URL },
+            ipfs: { status: 'unknown', provider: 'Pinata' },
+            encryption: { status: 'ok', algorithm: 'AES-256-CBC' }
+        }
+    };
+
+    // Check ML Service
+    try {
+        const mlResponse = await axios.get(`${ML_SERVICE_URL}/api/health`, { timeout: 5000 });
+        health.dependencies.mlService.status = mlResponse.data.status === 'ok' ? 'healthy' : 'degraded';
+        health.dependencies.mlService.geminiConfigured = mlResponse.data.gemini_configured || false;
+    } catch (error) {
+        health.dependencies.mlService.status = 'unhealthy';
+        health.dependencies.mlService.error = error.message;
+    }
+
+    // Check Pinata IPFS
+    health.dependencies.ipfs.status = (process.env.PINATA_API_KEY && process.env.PINATA_SECRET_API_KEY) ? 'configured' : 'not_configured';
+
+    // Overall health status
+    const allHealthy = health.dependencies.mlService.status !== 'unhealthy' && 
+                      health.dependencies.ipfs.status === 'configured';
+    
+    health.status = allHealthy ? 'ok' : 'degraded';
+
+    res.status(health.status === 'ok' ? 200 : 503).json(health);
 });
 
 /**
@@ -228,14 +291,31 @@ app.post('/api/upload', upload.single('document'), async (req, res) => {
         }
 
         const { originalname, mimetype, size, buffer } = req.file;
-        const { recordType } = req.body; // Extract recordType from form data
+        const { recordType: rawRecordType } = req.body; // Extract recordType from form data
+        
+        // Validate and sanitize recordType
+        if (!rawRecordType || typeof rawRecordType !== 'string' || rawRecordType.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'recordType is required. Please provide a record type (e.g., "Lab Report", "Prescription", "X-Ray").'
+            });
+        }
+        
+        const recordType = sanitizeRecordType(rawRecordType);
+        
+        if (recordType.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid recordType. Please provide a valid record type.'
+            });
+        }
         
         console.log('\n📄 Processing Document Upload');
         console.log('================================');
         console.log(`   Filename: ${originalname}`);
         console.log(`   MIME Type: ${mimetype}`);
         console.log(`   Size: ${(size / 1024).toFixed(2)} KB`);
-        console.log(`   Record Type: ${recordType || 'not specified'}`);
+        console.log(`   Record Type: ${recordType}`);
         console.log('================================\n');
 
         // ===== STEP 2: GENERATE HASH =====
@@ -281,12 +361,38 @@ app.post('/api/upload', upload.single('document'), async (req, res) => {
 
         // ===== STEP 6: IPFS UPLOAD =====
         console.log('\n☁️  Step 5/5: Uploading to IPFS via Pinata...');
-        const ipfsCid = await uploadToPinata(encryptedBuffer, originalname, recordType);
-        console.log(`   IPFS CID: ${ipfsCid}`);
+        let ipfsCid;
+        try {
+            ipfsCid = await uploadToPinata(encryptedBuffer, originalname, recordType);
+            console.log(`   IPFS CID: ${ipfsCid}`);
+        } catch (ipfsError) {
+            console.error('❌ IPFS Upload Error:', ipfsError.message);
+            // Re-throw with more context
+            throw new Error(`IPFS upload failed: ${ipfsError.message}. Please check Pinata API configuration.`);
+        }
 
         // ===== SUCCESS RESPONSE =====
         const processingTime = Date.now() - startTime;
         console.log(`\n✅ Upload Complete in ${processingTime}ms\n`);
+
+        // Save document metadata to database
+        try {
+            saveDocument({
+                documentHash: docHash,
+                ipfsCid: ipfsCid,
+                recordType: recordType,
+                filename: originalname,
+                fileSize: size,
+                mimeType: mimetype,
+                uploaderEmail: req.user?.email,
+                uploaderName: req.user?.name,
+                riskAnalysis: riskAnalysis
+            });
+            console.log('💾 Document metadata saved to database');
+        } catch (dbError) {
+            console.error('⚠️  Failed to save to database:', dbError.message);
+            // Continue anyway - document is on IPFS
+        }
 
         res.json({
             success: true,
@@ -306,10 +412,29 @@ app.post('/api/upload', upload.single('document'), async (req, res) => {
         const processingTime = Date.now() - startTime;
         console.error('\n❌ Upload Failed:', error.message);
         console.error(`   Failed after ${processingTime}ms\n`);
+        console.error('   Stack:', error.stack);
 
-        res.status(500).json({
+        // Provide more specific error messages based on error type
+        let statusCode = 500;
+        let errorMessage = 'Failed to process document';
+        
+        if (error.message.includes('Pinata API')) {
+            errorMessage = 'IPFS upload failed. Please check Pinata API configuration.';
+            statusCode = 503; // Service Unavailable
+        } else if (error.message.includes('Encryption failed')) {
+            errorMessage = 'File encryption failed. Please try again.';
+            statusCode = 500;
+        } else if (error.message.includes('IPFS upload failed')) {
+            errorMessage = 'Failed to upload to IPFS. Please check your network connection and Pinata configuration.';
+            statusCode = 503;
+        } else if (error.message.includes('Hash generation failed')) {
+            errorMessage = 'Document hash generation failed. Please try again.';
+            statusCode = 500;
+        }
+
+        res.status(statusCode).json({
             success: false,
-            error: 'Failed to process document',
+            error: errorMessage,
             message: error.message,
             timestamp: new Date().toISOString()
         });
@@ -379,6 +504,14 @@ app.get('/api/download/:cid', async (req, res) => {
                 error: 'IPFS CID is required'
             });
         }
+        
+        // Validate CID format
+        if (!isValidCID(cid)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid IPFS CID format'
+            });
+        }
 
         console.log(`📥 Downloading from IPFS: ${cid}`);
 
@@ -425,6 +558,14 @@ app.post('/api/decrypt-view', async (req, res) => {
                 error: 'CID and decryption key are required'
             });
         }
+        
+        // Validate CID format
+        if (!isValidCID(cid)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid IPFS CID format'
+            });
+        }
 
         console.log(`🔓 Decrypting document: ${cid}`);
 
@@ -436,8 +577,11 @@ app.post('/api/decrypt-view', async (req, res) => {
         const crypto = require('crypto');
         
         // Validate key format
-        if (key.length !== 64) {
-            throw new Error('Invalid encryption key format (must be 64 hex characters)');
+        if (!key || typeof key !== 'string' || key.length !== 64 || !/^[0-9a-fA-F]{64}$/.test(key)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid request. Please check the CID and key format.'
+            });
         }
         
         // Extract IV from encrypted buffer
@@ -481,10 +625,21 @@ app.post('/api/decrypt-view', async (req, res) => {
 
     } catch (error) {
         console.error('Decrypt-view error:', error);
+        
+        // Provide user-friendly error messages
+        let errorMessage = 'The key may be incorrect or the file may be corrupted.';
+        if (error.message.includes('Invalid encrypted buffer')) {
+            errorMessage = 'The encrypted file is corrupted or incomplete.';
+        } else if (error.message.includes('wrong final block length')) {
+            errorMessage = 'Incorrect decryption key. Please verify the key and try again.';
+        } else if (error.message.includes('File not found')) {
+            errorMessage = 'Document not found on IPFS. The CID may be incorrect.';
+        }
+        
         res.status(500).json({
             success: false,
             error: 'Decryption failed',
-            message: error.message
+            message: errorMessage
         });
     }
 });
@@ -494,6 +649,224 @@ app.post('/api/decrypt-view', async (req, res) => {
 // ============================================
 
 app.use('/api/auth', authRoutes);
+
+// ============================================
+// Database Query Routes
+// ============================================
+
+/**
+ * Get all stored documents
+ * GET /api/documents
+ */
+app.get('/api/documents', (req, res) => {
+    try {
+        const { limit = 100, offset = 0, uploader } = req.query;
+        
+        let documents;
+        if (uploader) {
+            documents = getDocumentsByUploader(uploader);
+        } else {
+            documents = getAllDocuments(parseInt(limit), parseInt(offset));
+        }
+
+        res.json({
+            success: true,
+            count: documents.length,
+            documents: documents.map(doc => ({
+                id: doc.id,
+                documentHash: doc.document_hash,
+                ipfsCid: doc.ipfs_cid,
+                recordType: doc.record_type,
+                filename: doc.filename,
+                fileSize: doc.file_size,
+                mimeType: doc.mime_type,
+                uploaderEmail: doc.uploader_email,
+                uploaderName: doc.uploader_name,
+                riskVerified: doc.risk_verified === 1,
+                riskConfidence: doc.risk_confidence,
+                riskMessage: doc.risk_message,
+                riskFlags: JSON.parse(doc.risk_flags || '[]'),
+                createdAt: doc.created_at,
+                updatedAt: doc.updated_at
+            }))
+        });
+    } catch (error) {
+        console.error('Get documents error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to retrieve documents',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Get document by hash
+ * GET /api/documents/:hash
+ */
+app.get('/api/documents/:hash', (req, res) => {
+    try {
+        const { hash } = req.params;
+        const document = getDocumentByHash(hash);
+
+        if (!document) {
+            return res.status(404).json({
+                success: false,
+                error: 'Document not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            document: {
+                id: document.id,
+                documentHash: document.document_hash,
+                ipfsCid: document.ipfs_cid,
+                recordType: document.record_type,
+                filename: document.filename,
+                fileSize: document.file_size,
+                mimeType: document.mime_type,
+                uploaderEmail: document.uploader_email,
+                uploaderName: document.uploader_name,
+                riskVerified: document.risk_verified === 1,
+                riskConfidence: document.risk_confidence,
+                riskMessage: document.risk_message,
+                riskFlags: JSON.parse(document.risk_flags || '[]'),
+                createdAt: document.created_at,
+                updatedAt: document.updated_at
+            }
+        });
+    } catch (error) {
+        console.error('Get document error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to retrieve document',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Get all stored tokens
+ * GET /api/tokens
+ */
+app.get('/api/tokens', (req, res) => {
+    try {
+        const { limit = 100, offset = 0, patient, issuer } = req.query;
+        
+        let tokens;
+        if (patient) {
+            tokens = getTokensByPatient(patient);
+        } else if (issuer) {
+            tokens = getTokensByIssuer(issuer);
+        } else {
+            tokens = getAllTokens(parseInt(limit), parseInt(offset));
+        }
+
+        res.json({
+            success: true,
+            count: tokens.length,
+            tokens: tokens.map(token => ({
+                id: token.id,
+                tokenId: token.token_id,
+                documentHash: token.document_hash,
+                ipfsCid: token.ipfs_cid,
+                recordType: token.record_type,
+                patientAddress: token.patient_address,
+                issuerAddress: token.issuer_address,
+                blockchainTxHash: token.blockchain_tx_hash,
+                isConsumed: token.is_consumed === 1,
+                blockchainTimestamp: token.blockchain_timestamp,
+                filename: token.filename,
+                mimeType: token.mime_type,
+                riskVerified: token.risk_verified === 1,
+                createdAt: token.created_at,
+                updatedAt: token.updated_at
+            }))
+        });
+    } catch (error) {
+        console.error('Get tokens error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to retrieve tokens',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Save token to database (called from frontend after minting)
+ * POST /api/tokens
+ */
+app.post('/api/tokens', express.json(), (req, res) => {
+    try {
+        const {
+            tokenId,
+            documentHash,
+            ipfsCid,
+            recordType,
+            patientAddress,
+            issuerAddress,
+            blockchainTxHash,
+            isConsumed,
+            blockchainTimestamp
+        } = req.body;
+
+        // Validate required fields
+        if (!tokenId || !documentHash || !ipfsCid || !patientAddress || !issuerAddress) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing required fields'
+            });
+        }
+
+        const dbId = saveToken({
+            tokenId,
+            documentHash,
+            ipfsCid,
+            recordType,
+            patientAddress,
+            issuerAddress,
+            blockchainTxHash,
+            isConsumed,
+            blockchainTimestamp
+        });
+
+        res.json({
+            success: true,
+            message: 'Token saved successfully',
+            dbId: dbId
+        });
+    } catch (error) {
+        console.error('Save token error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to save token',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Get database statistics
+ * GET /api/stats
+ */
+app.get('/api/stats', (req, res) => {
+    try {
+        const stats = getStatistics();
+        res.json({
+            success: true,
+            ...stats
+        });
+    } catch (error) {
+        console.error('Get statistics error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to retrieve statistics',
+            message: error.message
+        });
+    }
+});
 
 // ============================================
 // Error Handling Middleware
@@ -542,6 +915,7 @@ app.use((err, req, res, next) => {
 // ============================================
 
 app.listen(PORT, () => {
+    const stats = getStatistics();
     console.log('\n');
     console.log('═══════════════════════════════════════════════════');
     console.log('🏥  MedChainID Backend Server');
@@ -551,6 +925,7 @@ app.listen(PORT, () => {
     console.log(`🤖 ML Service: ${ML_SERVICE_URL}`);
     console.log(`📦 Max File Size: ${process.env.MAX_FILE_SIZE || 10}MB`);
     console.log(`🔐 Google OAuth: ${process.env.GOOGLE_CLIENT_ID ? 'Enabled' : 'Not configured'}`);
+    console.log(`💾 Database: SQLite (${stats.totalDocuments} docs, ${stats.totalTokens} tokens)`);
     console.log('═══════════════════════════════════════════════════');
     console.log('\n✅ Server is ready to accept requests\n');
     console.log('Available Endpoints:');
@@ -559,6 +934,11 @@ app.listen(PORT, () => {
     console.log('  POST /api/verify');
     console.log('  GET  /api/download/:cid');
     console.log('  POST /api/decrypt-view');
+    console.log('  GET  /api/documents');
+    console.log('  GET  /api/documents/:hash');
+    console.log('  GET  /api/tokens');
+    console.log('  POST /api/tokens');
+    console.log('  GET  /api/stats');
     console.log('  *    /api/auth/*');
     console.log('\n');
 });

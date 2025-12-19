@@ -18,7 +18,10 @@ export const WalletProvider = ({ children }: PropsWithChildren) => {
         aptosConnectDappId: "medchainid-app",
       }}
       onError={(error) => {
-        console.error("❌ Wallet Connection Error:", error);
+        console.error("❌ Wallet Connection Error:");
+        console.error("   Error object:", error);
+        console.error("   Error message:", error?.message || 'Unknown error');
+        console.error("   Error type:", typeof error);
       }}
     >
       {children}

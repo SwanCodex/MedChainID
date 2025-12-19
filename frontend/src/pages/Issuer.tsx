@@ -5,9 +5,10 @@ import { mintToken } from '../services/aptos';
 import WalletButton from '../components/WalletButton';
 
 export default function Issuer() {
-  const { connected, signAndSubmitTransaction } = useWallet();
+  const { connected, signAndSubmitTransaction, account } = useWallet();
   const [file, setFile] = useState<File | null>(null);
   const [recordType, setRecordType] = useState('Insurance Claim');
+  const [patientAddress, setPatientAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState('');
@@ -32,6 +33,16 @@ export default function Issuer() {
       return;
     }
 
+    if (!patientAddress) {
+      setError('Please enter patient wallet address');
+      return;
+    }
+
+    if (!patientAddress.startsWith('0x')) {
+      setError('Patient address must start with 0x');
+      return;
+    }
+
     setLoading(true);
     setError('');
     setResult(null);
@@ -48,7 +59,8 @@ export default function Issuer() {
         signAndSubmitTransaction,
         recordType,
         uploadResult.documentHash,
-        uploadResult.ipfsCID
+        uploadResult.ipfsCID,
+        patientAddress
       );
       console.log('Transaction result:', txResult);
 
@@ -67,7 +79,11 @@ export default function Issuer() {
 
   return (
     <div className="page-container">
-      <h2>📝 Issue Medical Token</h2>
+      <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+        <a href="/patient" style={{ color: '#10b981', textDecoration: 'underline' }}>← Patient Dashboard</a>
+        <a href="/verifier" style={{ color: '#10b981', textDecoration: 'underline' }}>Verifier →</a>
+      </div>
+      <h2>📝 Issue Medical Token (Hospital)</h2>
 
       {!connected && (
         <div className="card">
@@ -90,6 +106,21 @@ export default function Issuer() {
               <option>Medicine Report</option>
               <option>Other</option>
             </select>
+          </div>
+
+          <div className="form-group">
+            <label>Patient Wallet Address</label>
+            <input 
+              type="text" 
+              value={patientAddress}
+              onChange={(e) => setPatientAddress(e.target.value)}
+              placeholder="0x..."
+              disabled={loading}
+              style={{ fontFamily: 'monospace' }}
+            />
+            <small style={{ color: '#666', fontSize: '0.8rem' }}>
+              The patient who will own this medical record
+            </small>
           </div>
 
           <div className="form-group">

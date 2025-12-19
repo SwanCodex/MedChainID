@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet Adapter Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+        .info {
+            background: #2a2a2a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #00ff00;
+        }
+        .error {
+            border-left-color: #ff0000;
+            color: #ff6b6b;
+        }
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #00cc00;
+        }
+        pre {
+            background: #000;
+            padding: 10px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Wallet Adapter Debug Tool</h1>
+    
+    <div class="info">
+        <h3>Instructions:</h3>
+        <ol>
+            <li>Connect your Petra wallet</li>
+            <li>Check the wallet state below</li>
+            <li>View browser console for detailed logs (F12)</li>
+        </ol>
+    </div>
+
+    <div id="status" class="info">
+        ⏳ Loading wallet adapter...
+    </div>
+
+    <div id="walletInfo"></div>
+
+    <script>
+        console.log('🚀 Wallet Test Page Loaded');
+        console.log('🕐 Timestamp:', new Date().toISOString());
+        
+        // Check if window.aptos (Petra wallet) is available
+        setTimeout(() => {
+            const statusDiv = document.getElementById('status');
+            const walletDiv = document.getElementById('walletInfo');
+            
+            if (typeof window.aptos !== 'undefined') {
+                statusDiv.innerHTML = `
+                    <h3>✅ Petra Wallet Detected</h3>
+                    <p>Wallet API Version: ${window.aptos.version || 'unknown'}</p>
+                `;
+                statusDiv.className = 'info';
+                
+                // Log available methods
+                console.log('📋 Available Petra methods:', Object.keys(window.aptos));
+                
+                // Check account connection
+                window.aptos.account()
+                    .then(account => {
+                        console.log('✅ Wallet connected:', account);
+                        walletDiv.innerHTML = `
+                            <div class="info">
+                                <h3>💼 Wallet Account</h3>
+                                <pre>${JSON.stringify(account, null, 2)}</pre>
+                            </div>
+                        `;
+                    })
+                    .catch(err => {
+                        console.log('⚠️  Wallet not connected (this is normal if you haven\'t connected yet)');
+                        walletDiv.innerHTML = `
+                            <div class="info">
+                                <h3>⚠️ Wallet Not Connected</h3>
+                                <p>Please connect your wallet in the main app</p>
+                            </div>
+                        `;
+                    });
+                    
+            } else {
+                statusDiv.innerHTML = `
+                    <h3>❌ Petra Wallet Not Found</h3>
+                    <p>Please install Petra wallet extension</p>
+                    <a href="https://petra.app/" target="_blank" style="color: #00ff00;">Download Petra</a>
+                `;
+                statusDiv.className = 'info error';
+                console.error('❌ window.aptos is not defined - Petra wallet not installed');
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
