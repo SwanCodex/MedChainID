@@ -180,152 +180,212 @@ export default function Verifier() {
   };
 
   return (
-    <div className="page-container">
-      <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-        <a href="/issuer" style={{ color: '#10b981', textDecoration: 'underline' }}>← Hospital Issuer</a>
-        <a href="/patient" style={{ color: '#10b981', textDecoration: 'underline' }}>← Patient Dashboard</a>
+    <div className="min-h-screen bg-dark-bg text-text-primary">
+      {/* Background ambient glow */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-500/5 blur-[120px]" />
+        <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] rounded-full bg-purple-500/5 blur-[100px]" />
       </div>
-      <h2>🔍 Verify Medical Token</h2>
 
-      {/* Image Display Section (for URL-based verification) */}
-      {(decrypting || imageUrl || (searchParams.get('cid') && !imageUrl && error)) && (
-        <div className="card" style={{ marginBottom: '2rem' }}>
-          <h3>📄 Medical Record Document</h3>
+      <div className="max-w-4xl mx-auto px-4 py-8 relative z-10">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <a 
+              href="/issuer" 
+              className="text-text-secondary hover:text-brand-primary transition-colors text-sm"
+            >
+              ← Hospital Issuer
+            </a>
+            <a 
+              href="/patient" 
+              className="text-text-secondary hover:text-brand-primary transition-colors text-sm"
+            >
+              ← Patient Dashboard
+            </a>
+          </div>
+          <WalletButton />
+        </div>
+
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold mb-2">🔍 Verify Medical Token</h1>
+          <p className="text-text-secondary">
+            Verify authenticity and view medical records securely
+          </p>
+        </div>
+
+        {/* Image Display Section (for URL-based verification) */}
+        {(decrypting || imageUrl || (searchParams.get('cid') && !imageUrl && error)) && (
+          <div className="bg-dark-card border border-dark-border rounded-2xl p-6 mb-6 shadow-lg">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              📄 Medical Record Document
+            </h3>
+            
+            {decrypting && (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto mb-4"></div>
+                <p className="text-text-secondary">Decrypting document securely...</p>
+              </div>
+            )}
+
+            {imageUrl && (
+              <div className="mt-4 border-2 border-dark-border rounded-xl overflow-hidden bg-dark-surface">
+                <img 
+                  src={imageUrl} 
+                  alt="Medical Record" 
+                  className="w-full h-auto block"
+                />
+              </div>
+            )}
+
+            {!imageUrl && !decrypting && error && (
+              <div className="bg-red-950/30 border border-red-900/50 rounded-lg p-4 mt-4">
+                <p className="text-red-400">❌ {error}</p>
+                <p className="text-sm mt-2 text-red-300/70">
+                  Make sure the verification link is complete and hasn't expired.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Verification Form */}
+        <div className="bg-dark-card border border-dark-border rounded-2xl p-6 shadow-lg mb-6">
+          <h3 className="text-lg font-semibold mb-6">Enter Token Details</h3>
           
-          {decrypting && (
-            <div style={{ textAlign: 'center', padding: '2rem' }}>
-              <div className="spinner"></div>
-              <p>Decrypting document securely...</p>
-            </div>
-          )}
-
-          {imageUrl && (
-            <div style={{ 
-              marginTop: '1rem',
-              border: '2px solid #e5e7eb',
-              borderRadius: '8px',
-              overflow: 'hidden',
-              backgroundColor: '#f9fafb'
-            }}>
-              <img 
-                src={imageUrl} 
-                alt="Medical Record" 
-                style={{ 
-                  width: '100%',
-                  height: 'auto',
-                  display: 'block'
-                }}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">
+                Issuer Address
+              </label>
+              <input 
+                type="text" 
+                value={issuerAddress}
+                onChange={(e) => setIssuerAddress(e.target.value)}
+                placeholder="0x..."
+                disabled={loading}
+                className="w-full px-4 py-3 bg-dark-surface border border-dark-border rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-primary/50 focus:border-brand-primary transition-all disabled:opacity-50"
               />
             </div>
-          )}
 
-          {!imageUrl && !decrypting && error && (
-            <div className="error-box" style={{ marginTop: '1rem' }}>
-              <p>❌ {error}</p>
-              <p style={{ fontSize: '0.9rem', marginTop: '0.5rem', opacity: 0.7 }}>
-                Make sure the verification link is complete and hasn't expired.
-              </p>
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">
+                Token ID
+              </label>
+              <input 
+                type="number" 
+                value={tokenId}
+                onChange={(e) => setTokenId(e.target.value)}
+                placeholder="0"
+                disabled={loading}
+                className="w-full px-4 py-3 bg-dark-surface border border-dark-border rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-primary/50 focus:border-brand-primary transition-all disabled:opacity-50"
+              />
             </div>
-          )}
-        </div>
-      )}
 
-      <div className="card">
-        <div className="form-group">
-          <label>Issuer Address</label>
-          <input 
-            type="text" 
-            value={issuerAddress}
-            onChange={(e) => setIssuerAddress(e.target.value)}
-            placeholder="0x..."
-            disabled={loading}
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Token ID</label>
-          <input 
-            type="number" 
-            value={tokenId}
-            onChange={(e) => setTokenId(e.target.value)}
-            placeholder="0"
-            disabled={loading}
-          />
+            <button 
+              onClick={handleVerify} 
+              disabled={loading || !issuerAddress || !tokenId}
+              className="w-full py-3 px-6 bg-white text-black font-medium rounded-xl hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black"></div>
+                  Verifying...
+                </>
+              ) : (
+                <>🔍 Verify Token</>
+              )}
+            </button>
+          </div>
         </div>
 
-        <button 
-          onClick={handleVerify} 
-          className="btn-primary"
-          disabled={loading || !issuerAddress || !tokenId}
-        >
-          {loading ? '⏳ Verifying...' : '🔍 Verify Token'}
-        </button>
-      </div>
+        {/* Error Message */}
+        {error && !searchParams.get('cid') && (
+          <div className="bg-red-950/30 border border-red-900/50 rounded-xl p-4 mb-6">
+            <p className="text-red-400">❌ {error}</p>
+          </div>
+        )}
 
-      {error && (
-        <div className="error-message">
-          ❌ {error}
-        </div>
-      )}
-
-      {tokenData && (
-        <div className="card">
-          <h3>Token Details</h3>
-          
-          <div style={{ marginTop: '1rem' }}>
-            <p>
-              <strong>Status:</strong>{' '}
-              <span className={`status-badge ${tokenData.isConsumed ? 'status-consumed' : 'status-active'}`}>
-                {tokenData.isConsumed ? '❌ CONSUMED (Already Claimed)' : '✅ ACTIVE (Can Be Claimed)'}
-              </span>
-            </p>
+        {/* Token Details */}
+        {tokenData && (
+          <div className="bg-dark-card border border-dark-border rounded-2xl p-6 shadow-lg">
+            <h3 className="text-lg font-semibold mb-6">Token Details</h3>
+            
+            {/* Status Badge */}
+            <div className="mb-6">
+              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium ${
+                tokenData.isConsumed 
+                  ? 'bg-red-950/30 text-red-400 border border-red-900/50' 
+                  : 'bg-green-950/30 text-green-400 border border-green-900/50'
+              }`}>
+                {tokenData.isConsumed ? (
+                  <>❌ CONSUMED (Already Claimed)</>
+                ) : (
+                  <><span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span> ACTIVE (Can Be Claimed)</>
+                )}
+              </div>
+            </div>
             
             {tokenData.isConsumed && (
-              <div style={{ 
-                marginTop: '1rem', 
-                padding: '1rem', 
-                backgroundColor: '#7f1d1d20',
-                border: '1px solid #991b1b',
-                borderRadius: '8px'
-              }}>
-                <p style={{ color: '#fca5a5', fontSize: '0.9rem', margin: 0 }}>
+              <div className="bg-red-950/20 border border-red-900/30 rounded-xl p-4 mb-6">
+                <p className="text-red-300 text-sm">
                   ⚠️ <strong>WARNING:</strong> This medical record has been consumed and cannot be used for insurance claims again.
                   This prevents double-claiming and fraud.
                 </p>
               </div>
             )}
             
-            <p style={{ marginTop: '0.5rem' }}></p>
-            
-            <p><strong>Record Type:</strong> {tokenData.recordType}</p>
-            <p><strong>Patient Address:</strong> <code style={{ fontSize: '0.85rem' }}>{tokenData.patientAddress}</code></p>
-            <p><strong>Document Hash:</strong> <code style={{ fontSize: '0.85rem' }}>{tokenData.documentHash}</code></p>
-            <p><strong>IPFS CID:</strong> <code style={{ fontSize: '0.85rem' }}>{tokenData.ipfsCID}</code></p>
-            <p><strong>Issuer:</strong> <code style={{ fontSize: '0.85rem' }}>{tokenData.issuer}</code></p>
-            <p><strong>Timestamp:</strong> {new Date(tokenData.timestamp * 1000).toLocaleString()}</p>
-          </div>
-
-          {!tokenData.isConsumed && (
-            <div style={{ marginTop: '1.5rem' }}>
-              {!connected ? (
-                <div>
-                  <p style={{ marginBottom: '1rem' }}>Connect wallet to consume this token:</p>
-                  <WalletButton />
+            {/* Details Grid */}
+            <div className="space-y-4">
+              {[
+                { label: 'Record Type', value: tokenData.recordType, icon: '📋' },
+                { label: 'Patient Address', value: tokenData.patientAddress, mono: true, icon: '👤' },
+                { label: 'Document Hash', value: tokenData.documentHash, mono: true, icon: '🔐' },
+                { label: 'IPFS CID', value: tokenData.ipfsCID, mono: true, icon: '📦' },
+                { label: 'Issuer', value: tokenData.issuer, mono: true, icon: '🏥' },
+                { label: 'Timestamp', value: new Date(tokenData.timestamp * 1000).toLocaleString(), icon: '🕐' },
+              ].map((item, i) => (
+                <div key={i} className="flex items-start gap-3 p-3 bg-dark-surface rounded-lg border border-dark-border/50">
+                  <span className="text-xl">{item.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-text-muted mb-1">{item.label}</p>
+                    <p className={`${item.mono ? 'font-mono text-sm break-all' : ''} text-text-primary`}>
+                      {item.value}
+                    </p>
+                  </div>
                 </div>
-              ) : (
-                <button 
-                  onClick={handleConsume}
-                  className="btn-primary"
-                  disabled={consuming}
-                  style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}
-                >
-                  {consuming ? '⏳ Consuming...' : '🔥 Consume Token (One-Time-Use)'}
-                </button>
-              )}
+              ))}
             </div>
-          )}
-        </div>
-      )}
+
+            {/* Consume Button */}
+            {!tokenData.isConsumed && (
+              <div className="mt-6 pt-6 border-t border-dark-border">
+                {!connected ? (
+                  <div className="text-center">
+                    <p className="text-text-secondary mb-4">Connect wallet to consume this token:</p>
+                    <WalletButton />
+                  </div>
+                ) : (
+                  <button 
+                    onClick={handleConsume}
+                    disabled={consuming}
+                    className="w-full py-3 px-6 bg-gradient-to-r from-pink-500 to-red-500 text-white font-medium rounded-xl hover:from-pink-600 hover:to-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {consuming ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Consuming...
+                      </>
+                    ) : (
+                      <>🔥 Consume Token (One-Time-Use)</>
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

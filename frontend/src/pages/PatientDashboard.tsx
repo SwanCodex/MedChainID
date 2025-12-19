@@ -117,149 +117,223 @@ export default function PatientDashboard() {
 
   if (!connected) {
     return (
-      <div className="p-8">
-        <div className="bg-dark-card border border-dark-border rounded-lg p-8 text-center">
-          <div className="text-6xl mb-4">🔒</div>
-          <h2 className="text-2xl font-bold mb-4">Connect Your Wallet</h2>
-          <p className="text-text-secondary mb-6">
-            Please connect your Petra wallet to view your medical records
-          </p>
+      <div className="min-h-screen bg-dark-bg text-text-primary">
+        <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+          <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-purple-500/5 blur-[120px]" />
+        </div>
+        <div className="max-w-4xl mx-auto px-4 py-12 relative z-10">
+          <div className="bg-dark-card border border-dark-border rounded-2xl p-12 text-center shadow-lg">
+            <div className="text-7xl mb-6">🔒</div>
+            <h2 className="text-3xl font-bold mb-4">Connect Your Wallet</h2>
+            <p className="text-text-secondary text-lg max-w-md mx-auto">
+              Please connect your Petra wallet to view your medical records
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-8">
-      <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-        <a href="/issuer" style={{ color: '#10b981', textDecoration: 'underline' }}>← Hospital Issuer</a>
-        <a href="/verifier" style={{ color: '#10b981', textDecoration: 'underline' }}>Verifier →</a>
-      </div>
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold mb-2">👤 My Medical Vault</h2>
-          <p className="text-sm text-text-secondary">
-            Connected: {account?.address.substring(0, 6)}...{account?.address.substring(account?.address.length - 4)}
-          </p>
-        </div>
-        <button
-          onClick={fetchRecords}
-          disabled={loading}
-          className="px-4 py-2 bg-dark-border hover:bg-dark-surface text-text-primary rounded-md text-sm font-medium transition-colors disabled:opacity-50"
-        >
-          {loading ? '🔄 Loading...' : '🔄 Refresh'}
-        </button>
+    <div className="min-h-screen bg-dark-bg text-text-primary">
+      {/* Background ambient glow */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-purple-500/5 blur-[120px]" />
+        <div className="absolute top-[40%] right-[5%] w-[35%] h-[35%] rounded-full bg-blue-500/5 blur-[100px]" />
       </div>
 
-      {error && (
-        <div className="bg-red-950/30 border border-red-900/50 rounded-md p-4 mb-6">
-          <p className="text-sm text-red-400">❌ {error}</p>
+      <div className="max-w-5xl mx-auto px-4 py-8 relative z-10">
+        {/* Navigation */}
+        <div className="flex items-center gap-4 mb-8">
+          <a 
+            href="/issuer" 
+            className="text-text-secondary hover:text-brand-primary transition-colors text-sm"
+          >
+            ← Hospital Issuer
+          </a>
+          <a 
+            href="/verifier" 
+            className="text-text-secondary hover:text-brand-primary transition-colors text-sm"
+          >
+            Verifier →
+          </a>
         </div>
-      )}
 
-      {loading ? (
-        <div className="bg-dark-card border border-dark-border rounded-lg p-8 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-text-primary mx-auto mb-4"></div>
-          <p className="text-text-secondary">Loading your medical records...</p>
+        {/* Header */}
+        <div className="flex justify-between items-start mb-8">
+          <div>
+            <h1 className="text-3xl font-bold mb-3 flex items-center gap-3">
+              <span className="text-4xl">👤</span> My Medical Vault
+            </h1>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-dark-card border border-dark-border rounded-full">
+              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+              <span className="text-sm text-text-secondary font-mono">
+                {account?.address.substring(0, 6)}...{account?.address.substring(account?.address.length - 4)}
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={fetchRecords}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2.5 bg-dark-card border border-dark-border hover:border-brand-primary/50 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-primary"></div>
+                Loading...
+              </>
+            ) : (
+              <>🔄 Refresh</>
+            )}
+          </button>
         </div>
-      ) : myRecords.length === 0 ? (
-        <div className="bg-dark-card border border-dark-border rounded-lg p-8 text-center">
-          <div className="text-6xl mb-4">📭</div>
-          <h3 className="text-xl font-bold mb-2">No Records Found</h3>
-          <p className="text-text-secondary">
-            You don't have any medical records yet, or they were issued to a different address.
-          </p>
-          <p className="text-sm text-text-muted mt-4">
-            Hospital Address: {HOSPITAL_ADDRESS.substring(0, 10)}...
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-4">
-          {myRecords.map((record) => (
-            <div 
-              key={record.token_id} 
-              className="bg-dark-card border border-dark-border p-6 rounded-lg hover:border-text-muted transition-colors"
-            >
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="text-3xl">📄</div>
-                    <div>
-                      <h3 className="text-lg font-bold">
-                        {bytesToString(record.record_type)}
-                      </h3>
-                      <p className="text-xs text-text-secondary">
-                        Token ID: {record.token_id}
-                      </p>
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-950/30 border border-red-900/50 rounded-xl p-4 mb-6">
+            <p className="text-red-400">❌ {error}</p>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading ? (
+          <div className="bg-dark-card border border-dark-border rounded-2xl p-12 text-center">
+            <div className="animate-spin rounded-full h-14 w-14 border-b-2 border-brand-primary mx-auto mb-4"></div>
+            <p className="text-text-secondary">Loading your medical records...</p>
+          </div>
+        ) : myRecords.length === 0 ? (
+          /* Empty State */
+          <div className="bg-dark-card border border-dark-border rounded-2xl p-12 text-center">
+            <div className="text-7xl mb-6">📭</div>
+            <h3 className="text-2xl font-bold mb-3">No Records Found</h3>
+            <p className="text-text-secondary max-w-md mx-auto mb-4">
+              You don't have any medical records yet, or they were issued to a different address.
+            </p>
+            <p className="text-sm text-text-muted font-mono">
+              Hospital: {HOSPITAL_ADDRESS.substring(0, 10)}...
+            </p>
+          </div>
+        ) : (
+          /* Records Grid */
+          <div className="grid gap-4">
+            {myRecords.map((record) => (
+              <div 
+                key={record.token_id} 
+                className="bg-dark-card border border-dark-border rounded-2xl p-6 hover:border-brand-primary/30 transition-all shadow-lg"
+              >
+                <div className="flex justify-between items-start gap-6">
+                  <div className="flex-1 min-w-0">
+                    {/* Header */}
+                    <div className="flex items-center gap-4 mb-5">
+                      <div className="w-14 h-14 bg-dark-surface border border-dark-border rounded-xl flex items-center justify-center">
+                        <span className="text-3xl">📄</span>
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold">
+                          {bytesToString(record.record_type)}
+                        </h3>
+                        <p className="text-sm text-text-muted font-mono">
+                          Token #{record.token_id}
+                        </p>
+                      </div>
+                      <span className={`ml-auto px-3 py-1.5 rounded-full text-xs font-medium ${
+                        !record.is_consumed 
+                          ? 'bg-green-950/30 text-green-400 border border-green-900/50' 
+                          : 'bg-red-950/30 text-red-400 border border-red-900/50'
+                      }`}>
+                        {!record.is_consumed ? '✅ Active' : '❌ Consumed'}
+                      </span>
                     </div>
+
+                    {/* Details Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+                      <div className="bg-dark-surface rounded-lg p-3 border border-dark-border/50">
+                        <p className="text-xs text-text-muted mb-1">🏥 Issued By</p>
+                        <p className="font-mono text-sm text-text-secondary truncate">
+                          {record.issuer.substring(0, 8)}...
+                        </p>
+                      </div>
+                      <div className="bg-dark-surface rounded-lg p-3 border border-dark-border/50">
+                        <p className="text-xs text-text-muted mb-1">🕐 Date</p>
+                        <p className="text-sm text-text-secondary">
+                          {formatTimestamp(record.timestamp)}
+                        </p>
+                      </div>
+                      <div className="bg-dark-surface rounded-lg p-3 border border-dark-border/50">
+                        <p className="text-xs text-text-muted mb-1">📦 IPFS</p>
+                        <p className="font-mono text-sm text-text-secondary truncate">
+                          {bytesToString(record.ipfs_cid).substring(0, 12)}...
+                        </p>
+                      </div>
+                      <div className="bg-dark-surface rounded-lg p-3 border border-dark-border/50">
+                        <p className="text-xs text-text-muted mb-1">🔐 Hash</p>
+                        <p className="font-mono text-sm text-text-secondary truncate">
+                          {record.document_hash.substring(0, 12)}...
+                        </p>
+                      </div>
+                    </div>
+
+                    {record.is_consumed && (
+                      <div className="bg-red-950/20 border border-red-900/30 rounded-lg px-4 py-3">
+                        <p className="text-sm text-red-300">
+                          ⚠️ This claim has been consumed and cannot be used for insurance again
+                        </p>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-text-muted text-xs mb-1">Issued By</p>
-                      <p className="font-mono text-text-secondary">
-                        {record.issuer.substring(0, 8)}...{record.issuer.substring(record.issuer.length - 6)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-text-muted text-xs mb-1">Date</p>
-                      <p className="text-text-secondary">
-                        {formatTimestamp(record.timestamp)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-text-muted text-xs mb-1">Status</p>
-                      <p className={`font-medium ${!record.is_consumed ? 'text-green-400' : 'text-red-400'}`}>
-                        {!record.is_consumed ? '✅ Active (Claimable)' : '❌ Consumed (Claimed)'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-text-muted text-xs mb-1">IPFS</p>
-                      <p className="font-mono text-text-secondary text-xs">
-                        {bytesToString(record.ipfs_cid).substring(0, 12)}...
-                      </p>
-                    </div>
+                  {/* Share Button */}
+                  <div className="flex-shrink-0">
+                    <button 
+                      onClick={() => generateShareLink(record)}
+                      className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-500/20"
+                      title="Generate and copy secure verification link"
+                    >
+                      🔗 Share Access
+                    </button>
                   </div>
-
-                  <div className="mt-3 pt-3 border-t border-dark-border">
-                    <p className="text-text-muted text-xs mb-1">Document Hash</p>
-                    <p className="font-mono text-xs text-text-secondary break-all">
-                      {record.document_hash}
-                    </p>
-                  </div>
-
-                  {record.is_consumed && (
-                    <div className="mt-3 px-3 py-2 bg-red-950/30 border border-red-900/50 rounded-md">
-                      <p className="text-xs text-red-400">
-                        ⚠️ This claim has been consumed and cannot be used for insurance again
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="ml-4">
-                  <button 
-                    onClick={() => generateShareLink(record)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap"
-                    title="Generate and copy secure verification link"
-                  >
-                    🔗 Share Access
-                  </button>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
 
-      <div className="mt-8 bg-dark-surface border border-dark-border rounded-lg p-6">
-        <h3 className="text-sm font-bold mb-3">ℹ️ About Sharing</h3>
-        <ul className="text-xs text-text-secondary space-y-2">
-          <li>• <strong>Secure Links</strong>: Clicking "Share Access" generates a one-time link with embedded decryption key</li>
-          <li>• <strong>Privacy</strong>: The encryption key is stored in the URL hash (#key=...) and never sent to servers</li>
-          <li>• <strong>Control</strong>: Only people with the complete link can decrypt and view your records</li>
-          <li>• <strong>Blockchain Verified</strong>: All records are permanently stored on Aptos blockchain for authenticity</li>
-        </ul>
+        {/* Info Card */}
+        <div className="mt-8 bg-gradient-to-r from-brand-primary/5 to-blue-500/5 border border-brand-primary/20 rounded-2xl p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            ℹ️ About Secure Sharing
+          </h3>
+          <div className="grid md:grid-cols-2 gap-4 text-sm text-text-secondary">
+            <div className="flex items-start gap-3">
+              <span className="text-xl">🔒</span>
+              <div>
+                <strong className="text-text-primary">Secure Links</strong>
+                <p className="text-xs mt-1">Generated links contain embedded encryption keys for secure access</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-xl">👁️</span>
+              <div>
+                <strong className="text-text-primary">Privacy First</strong>
+                <p className="text-xs mt-1">Keys are stored in URL hash (#) and never sent to servers</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-xl">🎮</span>
+              <div>
+                <strong className="text-text-primary">You're in Control</strong>
+                <p className="text-xs mt-1">Only people with the complete link can decrypt records</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-xl">⛓️</span>
+              <div>
+                <strong className="text-text-primary">Blockchain Verified</strong>
+                <p className="text-xs mt-1">All records are stored on Aptos blockchain for authenticity</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

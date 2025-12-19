@@ -15,6 +15,7 @@ import PatientDashboard from './pages/PatientDashboard';
 import Verifier from './pages/Verifier';
 import LoginPage from './pages/LoginPage';
 import AuthCallback from './pages/AuthCallback';
+import DocumentsPage from './pages/DocumentsPage';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -53,6 +54,7 @@ function AppRoutes() {
         >
           <Route index element={<IssueRecordPage />} />
           <Route path="history" element={<HistoryPage />} />
+          <Route path="documents" element={<DocumentsPage />} />
           <Route path="my-records" element={<PatientDashboard />} />
         </Route>
       </Routes>

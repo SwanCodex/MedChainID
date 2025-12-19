@@ -21,6 +21,7 @@ const navItems: NavItem[] = [
   { path: '/patient', label: 'Patient Records', icon: '👤' },
   { path: '/verifier', label: 'Verifier', icon: '✅' },
   { path: '/history', label: 'History', icon: '📊' },
+  { path: '/documents', label: 'Database', icon: '📁' },
 ];
 
 export default function DashboardLayout() {

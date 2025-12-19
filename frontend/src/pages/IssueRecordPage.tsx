@@ -56,60 +56,37 @@ export default function IssueRecordPage() {
   };
 
   const handleSubmit = async () => {
-    if (!connected) {
-      setError('Please connect your wallet first');
-      return;
-    }
-
-    if (!file) {
-      setError('Please select a file to upload');
-      return;
-    }
-
-    if (!patientAddress) {
-      setError('Please enter the patient wallet address');
-      return;
-    }
-
-    if (!patientAddress.startsWith('0x') || patientAddress.length < 64) {
-      setError('Please enter a valid Aptos wallet address (starts with 0x and at least 64 characters)');
-      return;
-    }
+    if (!connected) return setError('Please connect your wallet first');
+    if (!file) return setError('Please select a file to upload');
+    if (!patientAddress.startsWith('0x')) return setError('Invalid Patient Address');
 
     setLoading(true);
     setError('');
     setResult(null);
 
     try {
-      console.log('📤 Step 1/2: Uploading document to backend...');
+      console.log('📤 Uploading document...');
       const uploadResult = await uploadDocument(file, recordType);
-      console.log('✅ Backend upload successful!');
-      console.log('   Document Hash:', uploadResult.documentHash);
-      console.log('   IPFS CID:', uploadResult.ipfsCID);
-
-      console.log('⛓️  Step 2/2: Minting token on Aptos blockchain...');
       
-      if (!signAndSubmitTransaction) {
-        throw new Error('Wallet not properly connected. Please refresh and reconnect wallet.');
+      // uploadResult from api.ts has: { documentHash, ipfsCID, riskAnalysis, metadata }
+      if (!uploadResult || !uploadResult.documentHash) {
+          throw new Error("Upload failed: No document hash returned.");
       }
-      
-      const txResult = await mintToken(
+
+      console.log('⛓️ Minting token...');
+      const txHash = await mintToken(
         signAndSubmitTransaction,
         recordType,
-        uploadResult.documentHash,
-        uploadResult.ipfsCID,
+        uploadResult.documentHash, // Ensure this matches what your API returns
+        uploadResult.ipfsCID,      // Ensure this matches what your API returns
         patientAddress
       );
-      console.log('✅ Blockchain transaction successful!');
-      console.log('   TX Hash:', txResult);
 
       setResult({
         ...uploadResult,
-        transactionHash: txResult,
-        patientAddress,
+        transactionHash: txHash,
       });
 
-      // Reset form
       setFile(null);
       setPatientAddress('');
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -151,26 +128,20 @@ export default function IssueRecordPage() {
           </p>
         </div>
 
-        {/* FoPatient Wallet Address */}
+        {/* Form */}
+        <div className="p-8 space-y-6">
+          {/* Patient Wallet Address */}
           <div>
-            <label className="block text-sm font-medium mb-3">Patient Wallet Address</label>
+            <label className="block text-sm font-medium mb-2">Patient Wallet Address</label>
             <input
               type="text"
               placeholder="0x..."
               value={patientAddress}
               onChange={(e) => setPatientAddress(e.target.value)}
-              disabled={loading}
-              className="w-full bg-dark-surface border border-dark-border rounded-md px-4 py-3 text-sm font-mono
-                focus:outline-none focus:border-text-secondary transition-colors
-                disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-dark-surface border border-dark-border rounded-md px-4 py-3 text-sm"
             />
-            <p className="text-xs text-text-muted mt-2">
-              The medical record will be cryptographically tied to this patient's wallet address
-            </p>
           </div>
 
-          {/* rm */}
-        <div className="p-8 space-y-6">
           {/* Record Type Selector */}
           <div>
             <label className="block text-sm font-medium mb-3">Record Type</label>
