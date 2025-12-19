@@ -4,14 +4,13 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-medchain = "_"
-
-[dev-addresses]
-medchain = "0xCAFE"
+# 'default' tells the CLI to use the account you set up with 'aptos init'
+medchain = "0x607e7706936b4f3a0f350e9fc1047bb101cc58e7149339c9f6e42b82e17d85bf" 
 
 [dependencies.AptosFramework]
 git = "https://github.com/aptos-labs/aptos-core.git"
-rev = "mainnet"
+# CRITICAL FIX: Use 'testnet' (or 'devnet') instead of 'mainnet'
+rev = "testnet" 
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]

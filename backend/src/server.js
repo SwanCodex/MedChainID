@@ -400,6 +400,12 @@ app.get('/api/download/:cid', async (req, res) => {
 });
 
 // ============================================
+// Authentication Routes
+// ============================================
+
+app.use('/api/auth', authRoutes);
+
+// ============================================
 // Error Handling Middleware
 // ============================================
 
@@ -440,12 +446,6 @@ app.use((err, req, res, next) => {
         ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
     });
 });
-
-// ============================================
-// Authentication Routes
-// ============================================
-
-app.use('/api/auth', authRoutes);
 
 // ============================================
 // Start Server

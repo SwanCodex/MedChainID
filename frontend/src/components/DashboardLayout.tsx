@@ -1,24 +1,24 @@
 /**
  * DashboardLayout.tsx
- * Minimalist dark mode layout inspired by usetool.bar
- * Ultra-clean sidebar + header design
+ * Professional dark mode layout
+ * Enterprise-grade dashboard design
  */
 
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { WalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
-import "@aptos-labs/wallet-adapter-ant-design/dist/index.css";
+import { FileText, History, Activity } from 'lucide-react';
+import WalletButton from './WalletButton';
 import UserMenu from './UserMenu';
 import { useAuth } from '../contexts/AuthContext';
 
 interface NavItem {
   path: string;
   label: string;
-  icon: string;
+  icon: typeof FileText;
 }
 
 const navItems: NavItem[] = [
-  { path: '/', label: 'Issue Record', icon: '📝' },
-  { path: '/history', label: 'History', icon: '📊' },
+  { path: '/', label: 'Issue Record', icon: FileText },
+  { path: '/history', label: 'History', icon: History },
 ];
 
 export default function DashboardLayout() {
@@ -30,21 +30,29 @@ export default function DashboardLayout() {
       <aside className="w-56 bg-dark-surface border-r border-dark-border flex flex-col">
         {/* Logo Area */}
         <div className="p-6 border-b border-dark-border">
-          <h1 className="text-xl font-medium tracking-tight">MedChainID</h1>
-          <p className="text-xs text-text-secondary mt-1">Verifiable Records</p>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-accent-primary rounded flex items-center justify-center">
+              <Activity size={18} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-base font-semibold tracking-tight text-text-primary">MedChainID</h1>
+              <p className="text-xs text-text-muted">Verifiable Records</p>
+            </div>
+          </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4">
+        <nav className="flex-1 p-3">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
+            const Icon = item.icon;
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 className={`
-                  flex items-center gap-3 px-4 py-3 mb-2 rounded-md
-                  transition-colors duration-150 text-sm
+                  flex items-center gap-3 px-3 py-2.5 mb-1 rounded
+                  transition-all duration-150 text-sm group
                   ${
                     isActive
                       ? 'bg-dark-card text-text-primary border border-dark-border'
@@ -52,7 +60,7 @@ export default function DashboardLayout() {
                   }
                 `}
               >
-                <span className="text-base">{item.icon}</span>
+                <Icon size={18} className={isActive ? 'text-accent-primary' : 'text-text-muted group-hover:text-text-primary'} />
                 <span className="font-medium">{item.label}</span>
               </Link>
             );
@@ -60,9 +68,11 @@ export default function DashboardLayout() {
         </nav>
 
         {/* Footer Info */}
-        <div className="p-4 border-t border-dark-border text-xs text-text-muted">
-          <p>Powered by Aptos</p>
-          <p className="mt-1">v1.0.0</p>
+        <div className="p-4 border-t border-dark-border">
+          <div className="text-xs text-text-muted space-y-1">
+            <p className="font-medium">Powered by Aptos</p>
+            <p className="text-text-muted/60">Version 1.0.0</p>
+          </div>
         </div>
       </aside>
 
@@ -79,7 +89,7 @@ export default function DashboardLayout() {
           {/* User Menu & Wallet Button - Far Right */}
           <div className="flex items-center gap-4">
             <UserMenu />
-            <WalletSelector />
+            <WalletButton />
           </div>
         </header>
 

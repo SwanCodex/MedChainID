@@ -1,11 +1,12 @@
 /**
  * IssueRecordPage.tsx
- * Minimalist dark mode page for issuing medical record tokens
- * Clean, centered design with drag-and-drop file upload
+ * Professional dark mode page for issuing medical record tokens
+ * Enterprise-grade design with clean, data-focused interface
  */
 
 import { useState, useRef } from 'react';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
+import { Upload, FileText, CheckCircle2, AlertCircle, Lock } from 'lucide-react';
 import { uploadDocument } from '../services/api';
 import { mintToken } from '../services/aptos';
 
@@ -78,13 +79,13 @@ export default function IssueRecordPage() {
       const txResult = await mintToken(
         signAndSubmitTransaction,
         recordType,
-        uploadResult.data.documentHash,
-        uploadResult.data.ipfsCID
+        uploadResult.documentHash,
+        uploadResult.ipfsCID
       );
       console.log('✅ Transaction result:', txResult);
 
       setResult({
-        ...uploadResult.data,
+        ...uploadResult,
         transactionHash: txResult,
       });
 
@@ -103,14 +104,16 @@ export default function IssueRecordPage() {
   if (!connected) {
     return (
       <div className="max-w-2xl mx-auto">
-        <div className="bg-dark-card border border-dark-border rounded-lg p-8 text-center">
-          <div className="text-4xl mb-4">🔐</div>
-          <h3 className="text-lg font-medium mb-2">Wallet Not Connected</h3>
-          <p className="text-text-secondary text-sm mb-6">
+        <div className="bg-dark-card border border-dark-border rounded p-12 text-center">
+          <div className="w-16 h-16 bg-dark-hover rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock size={32} className="text-text-muted" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2 text-text-primary">Wallet Not Connected</h3>
+          <p className="text-sm text-text-secondary mb-4">
             Please connect your Aptos wallet to issue medical tokens
           </p>
           <p className="text-xs text-text-muted">
-            Click the "Connect Wallet" button in the top right
+            Click the "Connect Wallet" button in the top right corner
           </p>
         </div>
       </div>
@@ -118,32 +121,32 @@ export default function IssueRecordPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       {/* Main Card */}
-      <div className="bg-dark-card border border-dark-border rounded-lg overflow-hidden">
+      <div className="bg-dark-card border border-dark-border rounded overflow-hidden">
         {/* Header */}
-        <div className="px-8 py-6 border-b border-dark-border">
-          <h2 className="text-xl font-medium">Issue New Medical Token</h2>
-          <p className="text-sm text-text-secondary mt-2">
-            Upload a document, encrypt it, and mint it as a verifiable token on Aptos
+        <div className="px-6 py-5 border-b border-dark-border">
+          <h2 className="text-lg font-semibold text-text-primary">Issue New Medical Token</h2>
+          <p className="text-sm text-text-secondary mt-1">
+            Upload, encrypt, and mint verifiable medical records on Aptos blockchain
           </p>
         </div>
 
         {/* Form */}
-        <div className="p-8 space-y-6">
+        <div className="p-6 space-y-5">
           {/* Record Type Selector */}
           <div>
-            <label className="block text-sm font-medium mb-3">Record Type</label>
+            <label className="block text-sm font-medium mb-2 text-text-primary">Record Type</label>
             <select
               value={recordType}
               onChange={(e) => setRecordType(e.target.value)}
               disabled={loading}
-              className="w-full bg-dark-surface border border-dark-border rounded-md px-4 py-3 text-sm
-                focus:outline-none focus:border-text-secondary transition-colors
-                disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-dark-surface border border-dark-border rounded px-3 py-2.5 text-sm text-text-primary
+                focus:outline-none focus:ring-1 focus:ring-accent-primary focus:border-accent-primary
+                transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {recordTypes.map((type) => (
-                <option key={type} value={type}>
+                <option key={type} value={type} className="bg-dark-surface text-text-primary">
                   {type}
                 </option>
               ))}
@@ -152,19 +155,19 @@ export default function IssueRecordPage() {
 
           {/* File Upload Area */}
           <div>
-            <label className="block text-sm font-medium mb-3">Document Upload</label>
+            <label className="block text-sm font-medium mb-2 text-text-primary">Document Upload</label>
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
               className={`
-                border-2 border-dashed rounded-lg p-12 text-center cursor-pointer
+                border-2 border-dashed rounded p-8 text-center cursor-pointer
                 transition-all duration-200
                 ${
                   dragging
-                    ? 'border-text-primary bg-dark-hover'
-                    : 'border-dark-border hover:border-text-secondary bg-dark-surface'
+                    ? 'border-accent-primary bg-accent-primary/5'
+                    : 'border-dark-border hover:border-text-muted bg-dark-surface'
                 }
                 ${loading ? 'opacity-50 cursor-not-allowed' : ''}
               `}
@@ -180,8 +183,10 @@ export default function IssueRecordPage() {
 
               {file ? (
                 <div>
-                  <div className="text-4xl mb-3">📄</div>
-                  <p className="text-sm font-medium mb-1">{file.name}</p>
+                  <div className="w-12 h-12 bg-accent-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <FileText size={24} className="text-accent-primary" />
+                  </div>
+                  <p className="text-sm font-medium text-text-primary mb-1">{file.name}</p>
                   <p className="text-xs text-text-secondary">
                     {(file.size / 1024).toFixed(2)} KB
                   </p>
@@ -191,8 +196,10 @@ export default function IssueRecordPage() {
                 </div>
               ) : (
                 <div>
-                  <div className="text-4xl mb-3">📁</div>
-                  <p className="text-sm font-medium mb-1">
+                  <div className="w-12 h-12 bg-dark-hover rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Upload size={24} className="text-text-muted" />
+                  </div>
+                  <p className="text-sm font-medium text-text-primary mb-1">
                     Drop your file here or click to browse
                   </p>
                   <p className="text-xs text-text-secondary">
@@ -205,19 +212,32 @@ export default function IssueRecordPage() {
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-950/30 border border-red-900/50 rounded-md p-4">
+            <div className="bg-red-500/10 border border-red-500/30 rounded p-3 flex items-start gap-3">
+              <AlertCircle size={18} className="text-red-400 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-red-400">{error}</p>
             </div>
           )}
 
           {/* Success Result */}
           {result && (
-            <div className="bg-green-950/30 border border-green-900/50 rounded-md p-4 space-y-2">
-              <p className="text-sm font-medium text-green-400">✅ Token Minted Successfully!</p>
-              <div className="space-y-1 text-xs text-text-secondary font-mono">
-                <p>Hash: {result.documentHash.substring(0, 20)}...</p>
-                <p>IPFS: {result.ipfsCID.substring(0, 20)}...</p>
-                <p>TX: {result.transactionHash?.substring(0, 20)}...</p>
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={20} className="text-emerald-400" />
+                <p className="text-sm font-semibold text-emerald-400">Token Minted Successfully</p>
+              </div>
+              <div className="space-y-1.5 text-xs text-text-secondary font-mono">
+                <div className="flex items-start gap-2">
+                  <span className="text-text-muted min-w-[60px]">Hash:</span>
+                  <span className="break-all">{result.documentHash.substring(0, 32)}...</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-text-muted min-w-[60px]">IPFS:</span>
+                  <span className="break-all">{result.ipfsCID.substring(0, 32)}...</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-text-muted min-w-[60px]">TX:</span>
+                  <span className="break-all">{result.transactionHash?.substring(0, 32)}...</span>
+                </div>
               </div>
             </div>
           )}
@@ -227,18 +247,18 @@ export default function IssueRecordPage() {
             onClick={handleSubmit}
             disabled={loading || !file}
             className={`
-              w-full py-4 rounded-md text-sm font-medium
+              w-full py-3 rounded text-sm font-semibold
               transition-all duration-200
               ${
                 loading || !file
                   ? 'bg-dark-border text-text-muted cursor-not-allowed'
-                  : 'bg-white text-black hover:bg-gray-200'
+                  : 'bg-accent-primary hover:bg-accent-hover text-white shadow-lg shadow-accent-primary/20'
               }
             `}
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
-                <span className="animate-spin">⏳</span>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                 Processing...
               </span>
             ) : (
@@ -249,24 +269,24 @@ export default function IssueRecordPage() {
       </div>
 
       {/* Info Section */}
-      <div className="mt-6 bg-dark-surface border border-dark-border rounded-lg p-6">
-        <h3 className="text-sm font-medium mb-3">How It Works</h3>
-        <ul className="space-y-2 text-xs text-text-secondary">
-          <li className="flex items-start gap-2">
-            <span className="text-text-muted">1.</span>
-            <span>Document is hashed (SHA-256) for on-chain verification</span>
+      <div className="mt-6 bg-dark-surface border border-dark-border rounded p-5">
+        <h3 className="text-sm font-semibold mb-3 text-text-primary">Security Process</h3>
+        <ul className="space-y-2.5 text-xs text-text-secondary">
+          <li className="flex items-start gap-3">
+            <span className="text-text-muted font-mono min-w-[20px]">01</span>
+            <span>Document hashed using SHA-256 for tamper-proof verification</span>
           </li>
-          <li className="flex items-start gap-2">
-            <span className="text-text-muted">2.</span>
-            <span>File is encrypted (AES-256-CBC) before storage</span>
+          <li className="flex items-start gap-3">
+            <span className="text-text-muted font-mono min-w-[20px]">02</span>
+            <span>File encrypted with AES-256-CBC before storage</span>
           </li>
-          <li className="flex items-start gap-2">
-            <span className="text-text-muted">3.</span>
-            <span>Encrypted file uploaded to IPFS (decentralized storage)</span>
+          <li className="flex items-start gap-3">
+            <span className="text-text-muted font-mono min-w-[20px]">03</span>
+            <span>Encrypted file uploaded to IPFS decentralized storage</span>
           </li>
-          <li className="flex items-start gap-2">
-            <span className="text-text-muted">4.</span>
-            <span>Token minted on Aptos blockchain with hash proof</span>
+          <li className="flex items-start gap-3">
+            <span className="text-text-muted font-mono min-w-[20px]">04</span>
+            <span>Immutable token minted on Aptos blockchain with hash proof</span>
           </li>
         </ul>
       </div>

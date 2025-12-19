@@ -7,15 +7,42 @@ const MODULE_NAME = 'MedChainID';
 const config = new AptosConfig({ network: APTOS_NETWORK as Network });
 const aptos = new Aptos(config);
 
+export async function initializeRegistry(signAndSubmitTransaction: any) {
+  const transaction = {
+    data: {
+      function: `${CONTRACT_ADDRESS}::${MODULE_NAME}::initialize`,
+      typeArguments: [],
+      functionArguments: [],
+    },
+  };
+
+  try {
+    const response = await signAndSubmitTransaction(transaction);
+    await aptos.waitForTransaction({ transactionHash: response.hash });
+    return response.hash;
+  } catch (error: any) {
+    // Ignore if already initialized
+    if (error.message?.includes('RESOURCE_ALREADY_EXISTS')) {
+      return null;
+    }
+    throw error;
+  }
+}
+
 export async function mintToken(
   signAndSubmitTransaction: any,
   recordType: string,
   documentHash: string,
   ipfsCID: string
 ) {
-  // Convert strings to hex byte arrays
+  // Convert strings to hex byte arrays (browser-compatible)
   const recordTypeBytes = Array.from(new TextEncoder().encode(recordType));
-  const documentHashBytes = Array.from(Buffer.from(documentHash, 'hex'));
+  
+  // Convert hex string to byte array
+  const documentHashBytes = documentHash.startsWith('0x') 
+    ? Array.from(new Uint8Array(documentHash.slice(2).match(/.{1,2}/g)?.map(byte => parseInt(byte, 16)) || []))
+    : Array.from(new TextEncoder().encode(documentHash));
+  
   const ipfsCIDBytes = Array.from(new TextEncoder().encode(ipfsCID));
 
   const transaction = {

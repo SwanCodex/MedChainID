@@ -2,7 +2,8 @@ module medchain::MedChainID {
     use std::signer;
     use std::vector;
     use aptos_framework::event;
-    use aptos_framework::account; // <--- ADD THIS IMPORT
+    use aptos_framework::account;
+    use aptos_framework::timestamp;
 
     /// Error codes
     const E_NOT_INITIALIZED: u64 = 1;
@@ -69,7 +70,7 @@ module medchain::MedChainID {
 
         let registry = borrow_global_mut<TokenRegistry>(account_addr);
         let token_id = registry.next_token_id;
-        let timestamp = aptos_framework::timestamp::now_seconds();
+        let timestamp = timestamp::now_seconds();
 
         let token = MedicalToken {
             token_id,
@@ -116,7 +117,7 @@ module medchain::MedChainID {
 
         assert!(found, E_TOKEN_NOT_FOUND);
 
-        let timestamp = aptos_framework::timestamp::now_seconds();
+        let timestamp = timestamp::now_seconds();
         event::emit_event(&mut registry.consume_events, ConsumeEvent {
             token_id,
             consumer: signer::address_of(consumer),

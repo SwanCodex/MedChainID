@@ -6,6 +6,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { FileText, History, LogOut } from 'lucide-react';
 
 export default function UserMenu() {
   const { user, logout } = useAuth();
@@ -92,7 +93,7 @@ export default function UserMenu() {
               className="w-full px-4 py-2 text-left text-sm text-text-primary 
                 hover:bg-dark-hover transition-colors duration-150 flex items-center gap-3"
             >
-              <span>📝</span>
+              <FileText size={16} className="text-text-muted" />
               <span>Issue Records</span>
             </button>
             
@@ -104,7 +105,7 @@ export default function UserMenu() {
               className="w-full px-4 py-2 text-left text-sm text-text-primary 
                 hover:bg-dark-hover transition-colors duration-150 flex items-center gap-3"
             >
-              <span>📊</span>
+              <History size={16} className="text-text-muted" />
               <span>History</span>
             </button>
 
@@ -115,7 +116,7 @@ export default function UserMenu() {
               className="w-full px-4 py-2 text-left text-sm text-red-400 
                 hover:bg-dark-hover transition-colors duration-150 flex items-center gap-3"
             >
-              <span>🚪</span>
+              <LogOut size={16} className="text-red-400" />
               <span>Logout</span>
             </button>
           </div>

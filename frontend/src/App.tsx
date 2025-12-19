@@ -7,6 +7,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { WalletProvider } from './components/WalletProvider';
 import DashboardLayout from './components/DashboardLayout';
 import IssueRecordPage from './pages/IssueRecordPage';
 import HistoryPage from './pages/HistoryPage';
@@ -58,9 +59,11 @@ function App() {
 
   return (
     <GoogleOAuthProvider clientId={googleClientId}>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <WalletProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </WalletProvider>
     </GoogleOAuthProvider>
   );
 }

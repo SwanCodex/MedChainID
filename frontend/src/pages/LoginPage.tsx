@@ -21,6 +21,9 @@ export default function LoginPage() {
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
+      console.log('Google credential received:', credentialResponse);
+      console.log('API URL:', import.meta.env.VITE_API_URL);
+      
       // Send the Google token to your backend
       const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/google/verify`, {
         method: 'POST',
@@ -32,7 +35,9 @@ export default function LoginPage() {
         }),
       });
 
+      console.log('Response status:', response.status);
       const data = await response.json();
+      console.log('Response data:', data);
 
       if (data.success) {
         // Store the JWT token
@@ -40,11 +45,11 @@ export default function LoginPage() {
         navigate('/');
       } else {
         console.error('Login failed:', data.error);
-        alert('Login failed. Please try again.');
+        alert(`Login failed: ${data.error || 'Please try again.'}`);
       }
     } catch (error) {
       console.error('Login error:', error);
-      alert('An error occurred during login. Please try again.');
+      alert(`An error occurred during login: ${error.message}`);
     }
   };
 

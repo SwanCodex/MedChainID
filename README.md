@@ -1,17 +1,204 @@
-# 🏥 MedChainID
+# 🏥 MedChainID - Decentralized Medical Record Verification
 
-**Decentralized Medical Record Verification on Aptos Blockchain**
+> **Tamper-proof, privacy-first medical records on Aptos blockchain with one-time-use verification**
 
-MedChainID is a privacy-first, tamper-resistant system for issuing and verifying one-time-use medical records. Built for the healthcare ecosystem to prevent fraud, ensure data integrity, and maintain patient privacy.
+[![Aptos](https://img.shields.io/badge/Aptos-Blockchain-00D4AA?style=for-the-badge)](https://aptoslabs.com/)
+[![Move](https://img.shields.io/badge/Move-Smart_Contract-FF5733?style=for-the-badge)](https://move-language.github.io/)
+[![React](https://img.shields.io/badge/React-18.2-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?style=for-the-badge&logo=node.js)](https://nodejs.org/)
 
 ---
 
-## 🎯 Core Innovation
+## 🎯 Problem Statement
 
-**Separation of Data & Proof**
-- **Sensitive Data**: Encrypted and stored off-chain (IPFS)
-- **Cryptographic Proof**: Only document hashes stored on-chain (Aptos)
-- **One-Time-Use**: Tokens can be "consumed" to prevent double-claim fraud
+Healthcare fraud costs **$68 billion annually** in the US alone. Issues include:
+- ❌ Document forgery and tampering
+- ❌ Double-claiming of insurance benefits
+- ❌ Counterfeit medical certificates
+- ❌ Privacy breaches with centralized storage
+
+## 💡 Our Solution
+
+**MedChainID** separates **data** from **proof**:
+- 🔐 **Encrypted medical records** stored off-chain (IPFS)
+- ✅ **Cryptographic hashes** stored on-chain (Aptos)
+- 🎫 **One-time-use tokens** prevent fraud
+- 🔒 **Zero sensitive data** on blockchain
+
+---
+
+## 🚀 Quick Start (5 Minutes)
+
+### Prerequisites
+```bash
+# Required
+node -v    # v18 or higher
+python -V  # 3.9 or higher
+aptos -V   # Aptos CLI installed
+
+# Get accounts
+# 1. Pinata account: https://app.pinata.cloud/
+# 2. Aptos wallet: https://petra.app/
+```
+
+### 🎬 One-Command Setup
+
+```bash
+# Clone repository
+git clone https://github.com/SwanCodex/MedChainID.git
+cd MedChainID
+
+# Run setup script (automated)
+chmod +x setup.sh
+./setup.sh
+```
+
+### 📦 Manual Setup
+
+#### 1️⃣ Deploy Smart Contract (2 mins)
+
+```bash
+cd aptos-contract
+
+# Configure your Aptos account
+aptos init --network devnet
+# Follow prompts - choose "devnet" and paste your private key from Petra wallet
+
+# Compile and deploy
+aptos move compile --named-addresses medchain=default
+aptos move publish --named-addresses medchain=default --assume-yes
+
+# ✅ SAVE YOUR CONTRACT ADDRESS - you'll see it in the output!
+```
+
+#### 2️⃣ Configure Backend (1 min)
+
+```bash
+cd ../backend
+
+# Install dependencies
+npm install
+
+# Create .env file
+cp .env.example .env
+
+# Edit .env:
+nano .env
+```
+
+**Required .env values:**
+```env
+PORT=5000
+NODE_ENV=development
+CORS_ORIGIN=http://localhost:5173
+
+# Get from https://app.pinata.cloud/keys
+PINATA_JWT=your_jwt_token_here
+
+# Generate encryption key
+ENCRYPTION_KEY=<run: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">
+
+# Your deployed contract address
+APTOS_CONTRACT_ADDRESS=0xYOUR_CONTRACT_ADDRESS_HERE
+```
+
+#### 3️⃣ Configure Frontend (1 min)
+
+```bash
+cd ../frontend
+
+# Install dependencies
+npm install
+
+# Create .env file
+cp .env.example .env
+
+# Edit .env:
+nano .env
+```
+
+**Required .env values:**
+```env
+VITE_API_URL=http://localhost:5000/api
+VITE_APTOS_NETWORK=devnet
+VITE_CONTRACT_ADDRESS=0xYOUR_CONTRACT_ADDRESS_HERE
+```
+
+#### 4️⃣ Setup ML Engine (Optional - 1 min)
+
+```bash
+cd ../ml-engine
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start ML server
+python app.py
+```
+
+#### 5️⃣ Start All Servers
+
+```bash
+# Terminal 1 - Backend
+cd backend && npm run dev
+
+# Terminal 2 - Frontend
+cd frontend && npm run dev
+
+# Terminal 3 - ML Engine (optional)
+cd ml-engine && python app.py
+```
+
+**🎉 Open http://localhost:5173 in your browser!**
+
+---
+
+## 📱 How to Use
+
+### For Issuers (Hospitals/Labs/Government)
+
+1. **Connect Wallet**
+   - Click "Connect Wallet" in top right
+   - Approve Petra wallet connection
+   - Ensure you're on Aptos Devnet
+
+2. **Issue Medical Token**
+   - Go to "Issue Record" page
+   - Upload document (PDF/Image)
+   - Select record type (Birth Certificate, Insurance Claim, etc.)
+   - Click "Issue Token"
+
+3. **Process Flow**
+   ```
+   Upload → Hash (SHA-256) → Encrypt (AES-256) → Upload to IPFS → Mint on Aptos
+   ```
+
+4. **Save Token Details**
+   - Token ID: `0`
+   - Issuer Address: `0x2ce5...`
+   - Transaction Hash: `0x098f...`
+
+### For Verifiers (Insurance/Pharmacies)
+
+1. **Verify Token**
+   - Go to "Verify" page
+   - Enter Issuer Address + Token ID
+   - Click "Verify Token"
+
+2. **Check Details**
+   - ✅ Valid/Consumed status
+   - 📄 Document hash
+   - 🌐 IPFS CID
+   - ⏰ Timestamp
+
+3. **Consume Token** (One-Time Use)
+   - Click "Consume Token"
+   - Approve transaction
+   - Token marked as used (prevents reuse)
 
 ---
 

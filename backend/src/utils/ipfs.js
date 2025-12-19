@@ -12,16 +12,17 @@ const FormData = require('form-data');
 require('dotenv').config();
 
 // Pinata API configuration
+const PINATA_JWT = process.env.PINATA_JWT; // New JWT-based auth
 const PINATA_API_KEY = process.env.PINATA_API_KEY;
 const PINATA_SECRET_KEY = process.env.PINATA_SECRET_API_KEY;
 const PINATA_API_URL = 'https://api.pinata.cloud/pinning/pinFileToIPFS';
 const PINATA_GATEWAY = 'https://gateway.pinata.cloud/ipfs';
 
 // Validate API keys on startup
-if (!PINATA_API_KEY || !PINATA_SECRET_KEY) {
-    console.error('❌ WARNING: Pinata API keys not found in .env');
-    console.error('   Get your keys from: https://app.pinata.cloud/');
-    console.error('   Set PINATA_API_KEY and PINATA_SECRET_API_KEY in .env');
+if (!PINATA_JWT && (!PINATA_API_KEY || !PINATA_SECRET_KEY)) {
+    console.error('❌ WARNING: Pinata credentials not found in .env');
+    console.error('   Get your JWT token from: https://app.pinata.cloud/');
+    console.error('   Set PINATA_JWT in .env (recommended) or PINATA_API_KEY and PINATA_SECRET_API_KEY');
 }
 
 /**
@@ -40,8 +41,8 @@ if (!PINATA_API_KEY || !PINATA_SECRET_KEY) {
 async function uploadToPinata(buffer, filename) {
     try {
         // Validate inputs
-        if (!PINATA_API_KEY || !PINATA_SECRET_KEY) {
-            throw new Error('Pinata API keys not configured. Check .env file.');
+        if (!PINATA_JWT && (!PINATA_API_KEY || !PINATA_SECRET_KEY)) {
+            throw new Error('Pinata credentials not configured. Check .env file and add PINATA_JWT or API keys.');
         }
 
         if (!Buffer.isBuffer(buffer)) {
@@ -82,13 +83,23 @@ async function uploadToPinata(buffer, filename) {
         });
         formData.append('pinataOptions', pinOptions);
 
+        // Prepare headers - use JWT if available, fallback to API keys
+        const headers = {
+            ...formData.getHeaders(),
+        };
+
+        if (PINATA_JWT) {
+            // Use JWT authentication (recommended)
+            headers['Authorization'] = `Bearer ${PINATA_JWT}`;
+        } else {
+            // Fallback to legacy API key method
+            headers['pinata_api_key'] = PINATA_API_KEY;
+            headers['pinata_secret_api_key'] = PINATA_SECRET_KEY;
+        }
+
         // Make API request to Pinata
         const response = await axios.post(PINATA_API_URL, formData, {
-            headers: {
-                ...formData.getHeaders(),
-                'pinata_api_key': PINATA_API_KEY,
-                'pinata_secret_api_key': PINATA_SECRET_KEY
-            },
+            headers,
             maxBodyLength: Infinity, // No size limit
             maxContentLength: Infinity
         });

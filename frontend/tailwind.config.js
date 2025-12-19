@@ -8,21 +8,28 @@ export default {
     extend: {
       colors: {
         dark: {
-          bg: '#000000',
-          surface: '#0a0a0a',
-          card: '#141414',
-          border: '#333333',
-          hover: '#1a1a1a',
+          bg: '#050505',
+          surface: '#0A0A0A',
+          card: '#1A1A1A',
+          border: '#262626',
+          hover: '#1F1F1F',
         },
         text: {
-          primary: '#ffffff',
-          secondary: '#a0a0a0',
-          muted: '#666666',
+          primary: '#E5E5E5',
+          secondary: '#A3A3A3',
+          muted: '#737373',
+        },
+        accent: {
+          primary: '#3B82F6',
+          hover: '#2563EB',
         },
       },
       fontFamily: {
-        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-        mono: ['Courier New', 'monospace'],
+        sans: ['Inter', 'Geist Sans', 'Roboto', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Courier New', 'monospace'],
+      },
+      borderRadius: {
+        'DEFAULT': '6px',
       },
     },
   },
