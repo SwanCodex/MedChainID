@@ -29,15 +29,16 @@ if (!PINATA_API_KEY || !PINATA_SECRET_KEY) {
  * 
  * @param {Buffer} buffer - Encrypted file buffer (MUST be encrypted!)
  * @param {string} filename - Original filename (will be prefixed with 'encrypted_')
+ * @param {string} recordType - Type of medical record (e.g., 'lab_result', 'prescription', etc.)
  * @returns {Promise<string>} - IPFS CID (Content Identifier)
  * 
  * Flow:
  * 1. Create form data with encrypted buffer
- * 2. Add metadata (timestamp, encrypted flag)
+ * 2. Add metadata (timestamp, encrypted flag, recordType)
  * 3. Send to Pinata API
  * 4. Return IPFS CID
  */
-async function uploadToPinata(buffer, filename) {
+async function uploadToPinata(buffer, filename, recordType = 'unknown') {
     try {
         // Validate inputs
         if (!PINATA_API_KEY || !PINATA_SECRET_KEY) {
@@ -70,6 +71,7 @@ async function uploadToPinata(buffer, filename) {
                 app: 'MedChainID',
                 encrypted: 'true',
                 originalFilename: filename,
+                recordType: recordType || 'unknown',
                 uploadedAt: new Date().toISOString(),
                 version: '1.0'
             }

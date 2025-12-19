@@ -1,0 +1,442 @@
+[
+  {
+    "id": "TC001",
+    "title": "Google OAuth Successful Authentication",
+    "description": "Verify that a user can successfully authenticate using Google OAuth and receive a valid JWT token.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the Google OAuth login endpoint (/api/auth/google)."
+      },
+      {
+        "type": "action",
+        "description": "Complete authentication via Google login page."
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure the system redirects to the callback endpoint with a Google OAuth token."
+      },
+      {
+        "type": "action",
+        "description": "Send the Google ID token to /api/auth/google/verify to obtain a JWT."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm response contains success=true, a valid JWT token, and user info object."
+      },
+      {
+        "type": "action",
+        "description": "Use the JWT token to request /api/auth/user endpoint."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user information corresponds to the authenticated Google user."
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Google OAuth Authentication Failure",
+    "description": "Verify system handles invalid or expired Google ID tokens properly during authentication.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Submit an invalid or expired Google ID token to /api/auth/google/verify."
+      },
+      {
+        "type": "assertion",
+        "description": "Check the response returns a 401 status with appropriate error message."
+      },
+      {
+        "type": "action",
+        "description": "Send request to /api/auth/user without JWT or with invalid JWT."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm response is 401 Unauthorized."
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Document Upload and ML Fraud Analysis Success",
+    "description": "Verify a medical document (PDF/image) can be uploaded, processed, analyzed for fraud, encrypted, stored on IPFS, and the correct metadata returned.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send a valid medical document file to /api/upload."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response success=true with SHA-256 hash, IPFS CID, fraud risk analysis object with confidence and riskFlags."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm metadata contains filename, fileSize, mimeType, processingTime, and timestamp."
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Document Upload Missing File Error",
+    "description": "Verify that uploading without a file returns a validation error.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send a POST request to /api/upload with empty multipart form data."
+      },
+      {
+        "type": "assertion",
+        "description": "Check the response status is 400 with appropriate error details about missing document file."
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Document Verification Success",
+    "description": "Verify the system can check uploaded document integrity by comparing its hash with an expected hash.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Upload a valid document to /api/verify along with the correct expectedHash."
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure response success=true, valid=true, actualHash matches expectedHash, and an informative message is returned."
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Document Verification Failure Due to Hash Mismatch",
+    "description": "Verify the system correctly invalidates a document when the actual hash does not match the expected hash.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send a document file with an incorrect expectedHash to /api/verify."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm response success=true, valid=false, actualHash and expectedHash shown, and a relevant message indicating mismatch."
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Document Verification Missing Parameters",
+    "description": "Verify 400 error is returned when document or expectedHash is missing in /api/verify request.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send POST request to /api/verify missing the document file."
+      },
+      {
+        "type": "assertion",
+        "description": "Response status is 400 with error about missing document."
+      },
+      {
+        "type": "action",
+        "description": "Send POST request to /api/verify missing the expectedHash parameter."
+      },
+      {
+        "type": "assertion",
+        "description": "Response status is 400 with error about missing expectedHash."
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Download Encrypted Document from IPFS Success",
+    "description": "Verify encrypted document bytes can be downloaded from IPFS given a valid CID.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Make GET request to /api/download/{cid} with a valid IPFS CID."
+      },
+      {
+        "type": "assertion",
+        "description": "Validate that response returns application/octet-stream binary data of encrypted document."
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Download Encrypted Document Missing CID",
+    "description": "Verify 400 error when requesting /api/download without CID.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Make GET request to /api/download/ with empty or missing CID."
+      },
+      {
+        "type": "assertion",
+        "description": "Response status is 400 indicating missing CID parameter."
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Decrypt and View Document Success",
+    "description": "Verify that the encrypted document fetched from IPFS can be decrypted successfully with a valid AES-256-CBC key and returned in original format.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send POST request to /api/decrypt-view with valid CID and correct hex-encoded AES-256 key."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm response returns decrypted document bytes with correct MIME type (pdf/jpeg/png)."
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Decrypt and View Document Failure on Missing Parameters",
+    "description": "Verify 400 error is returned when CID or key is missing in decrypt view request.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send POST request to /api/decrypt-view missing the CID."
+      },
+      {
+        "type": "assertion",
+        "description": "Response status is 400 with error about missing CID."
+      },
+      {
+        "type": "action",
+        "description": "Send POST request to /api/decrypt-view missing the key."
+      },
+      {
+        "type": "assertion",
+        "description": "Response status is 400 with error about missing key."
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Decrypt and View Document Failure on Invalid Key",
+    "description": "Verify the system returns 500 error on decryption failure due to incorrect AES key.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send POST request to /api/decrypt-view with valid CID but incorrect AES key."
+      },
+      {
+        "type": "assertion",
+        "description": "Response status is 500 indicating decryption failure."
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "ML Fraud Detection Engine OCR Verification Success",
+    "description": "Verify ML engine can accept document file or raw text and return valid fraud detection result.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send a valid PDF or image file and recordType to /api/ocr-verify on ML engine."
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure response success=true and data object with analysis results."
+      },
+      {
+        "type": "action",
+        "description": "Send raw document text and filename in JSON to /api/ocr-verify."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm response success=true with appropriate data content."
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "ML Fraud Detection Engine Missing Input Error",
+    "description": "Verify 400 error when ML engine /api/ocr-verify is called with neither file nor text.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send POST request to /api/ocr-verify with empty multipart form data."
+      },
+      {
+        "type": "assertion",
+        "description": "Response status is 400 indicating missing file or text."
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "API Backend Health Check",
+    "description": "Verify the backend health endpoint returns correct health and environment information.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send GET request to /api/health."
+      },
+      {
+        "type": "assertion",
+        "description": "Validate response contains status, service, version, timestamp, uptime, and environment."
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "ML Engine Health Check",
+    "description": "Verify ML engine health endpoint returns running status and configuration.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send GET request to ML engine /api/health."
+      },
+      {
+        "type": "assertion",
+        "description": "Response includes status, service, version, and gemini_configured flag."
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "JWT Session Management and Logout",
+    "description": "Verify user sessions are maintained using JWT and logout endpoint clears session correctly.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Authenticate user and obtain a JWT."
+      },
+      {
+        "type": "action",
+        "description": "Access protected endpoints using JWT verifying continued authentication."
+      },
+      {
+        "type": "action",
+        "description": "Call /api/auth/logout endpoint to clear session/token."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm logout success response and subsequent requests with old JWT are unauthorized."
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "One-Time Use Token Enforcement on Blockchain",
+    "description": "Verify that tokens minted on Aptos blockchain are consumable only once to prevent reuse or fraud.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Mint a one-time-use token on blockchain linked to a medical record."
+      },
+      {
+        "type": "action",
+        "description": "Consume the token via verification API or frontend verifier."
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure token consumption succeeds and any subsequent consumption attempts are rejected."
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "Frontend Issuer Workflow",
+    "description": "Verify issuer can authenticate, upload document, and receive token ID and address with clear status feedback.",
+    "category": "ui",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Issuer logs in via Google OAuth or connects Aptos wallet."
+      },
+      {
+        "type": "action",
+        "description": "Navigate to document upload and issuance page."
+      },
+      {
+        "type": "action",
+        "description": "Upload a valid document and select record type."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the UI displays upload progress, fraud analysis results, and encryption status."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm token minting success and display of token ID and issuer address."
+      }
+    ]
+  },
+  {
+    "id": "TC020",
+    "title": "Frontend Verifier Workflow",
+    "description": "Verify verifier can input token details, query blockchain for validity, download, decrypt document, and consume token with UI feedback.",
+    "category": "ui",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Verifier accesses verification page and inputs token ID and issuer address."
+      },
+      {
+        "type": "action",
+        "description": "Trigger blockchain query to verify token validity and fetch document metadata."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify UI shows token validity, metadata, and option to download encrypted document."
+      },
+      {
+        "type": "action",
+        "description": "Download and decrypt document using authorized key."
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure decrypted document is viewable in UI."
+      },
+      {
+        "type": "action",
+        "description": "Consume the token using blockchain transaction through frontend."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify UI confirms successful token consumption and disables reuse."
+      }
+    ]
+  }
+]

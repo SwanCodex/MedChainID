@@ -113,6 +113,8 @@ module medchain::MedChainID {
             let token = vector::borrow_mut(&mut registry.tokens, i);
             if (token.token_id == token_id) {
                 assert!(!token.is_consumed, E_ALREADY_CONSUMED);
+                // Security: Only the patient can consume their own token
+                assert!(signer::address_of(consumer) == token.patient_address, E_UNAUTHORIZED);
                 token.is_consumed = true;
                 found = true;
                 break
