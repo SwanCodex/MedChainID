@@ -365,6 +365,40 @@ function getTokenCount() {
 // ============================================
 
 /**
+ * Get count of documents created today
+ */
+function getDocumentsToday() {
+    if (!isReady) return 0;
+    try {
+        const result = db.exec("SELECT COUNT(*) as count FROM documents WHERE date(created_at) = date('now')");
+        if (result && result.length > 0 && result[0].values && result[0].values.length > 0) {
+            return result[0].values[0][0];
+        }
+        return 0;
+    } catch (error) {
+        console.error('Error getting documents today:', error.message);
+        return 0;
+    }
+}
+
+/**
+ * Get count of tokens created today
+ */
+function getTokensToday() {
+    if (!isReady) return 0;
+    try {
+        const result = db.exec("SELECT COUNT(*) as count FROM tokens WHERE date(created_at) = date('now')");
+        if (result && result.length > 0 && result[0].values && result[0].values.length > 0) {
+            return result[0].values[0][0];
+        }
+        return 0;
+    } catch (error) {
+        console.error('Error getting tokens today:', error.message);
+        return 0;
+    }
+}
+
+/**
  * Get database statistics
  */
 function getStatistics() {
@@ -373,12 +407,16 @@ function getStatistics() {
             totalDocuments: 0,
             totalTokens: 0,
             verifiedDocuments: 0,
-            consumedTokens: 0
+            consumedTokens: 0,
+            documentsToday: 0,
+            tokensToday: 0
         };
     }
     
     const totalDocs = getDocumentCount();
     const totalTokens = getTokenCount();
+    const docsToday = getDocumentsToday();
+    const tokensToday = getTokensToday();
     
     const verifiedResult = db.exec('SELECT COUNT(*) as count FROM documents WHERE risk_verified = 1');
     const verifiedDocs = verifiedResult && verifiedResult.length > 0 && verifiedResult[0].values && verifiedResult[0].values.length > 0 
@@ -392,7 +430,9 @@ function getStatistics() {
         totalDocuments: totalDocs,
         totalTokens: totalTokens,
         verifiedDocuments: verifiedDocs,
-        consumedTokens: consumedTokens
+        consumedTokens: consumedTokens,
+        documentsToday: docsToday,
+        tokensToday: tokensToday
     };
 }
 
@@ -449,6 +489,8 @@ module.exports = {
     updateTokenConsumption,
     getAllTokens,
     getTokenCount,
+    getDocumentsToday,
+    getTokensToday,
     getStatistics,
     dbInit // Export promise so server can wait for init
 };

@@ -856,7 +856,7 @@ app.get('/api/stats', (req, res) => {
         const stats = getStatistics();
         res.json({
             success: true,
-            statistics: stats
+            ...stats
         });
     } catch (error) {
         console.error('Get statistics error:', error);

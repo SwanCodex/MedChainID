@@ -1,8 +1,8 @@
 @import 'tailwindcss';
 
 /* 
- * Minimalist Dark Mode - Inspired by usetool.bar
- * Ultra-clean, high contrast, no gradients
+ * Obsidian Dark Theme - Catppuccin Mocha Inspired
+ * Premium dark UI with purple/lavender accents
  */
 
 * {
@@ -12,9 +12,9 @@
 }
 
 body {
-  background-color: #000000;
-  color: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #1e1e2e;
+  color: #cdd6f4;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -22,99 +22,121 @@ body {
 #root {
   width: 100%;
   min-height: 100vh;
+  background: linear-gradient(135deg, #1e1e2e 0%, #181825 50%, #11111b 100%);
 }
 
-/* Scrollbar styling for dark mode */
+/* Scrollbar styling - Obsidian theme */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background-color: #000000;
+  background-color: #181825;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #333333;
+  background-color: #45475a;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #666666;
+  background-color: #585b70;
 }
 
-/* Selection colors */
+/* Selection colors - Purple accent */
 ::selection {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background-color: rgba(203, 166, 247, 0.3);
+  color: #cdd6f4;
 }
 
-/* Focus styles - minimalist */
+/* Focus styles - Purple glow */
 *:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.3);
+  outline: 2px solid rgba(203, 166, 247, 0.5);
   outline-offset: 2px;
 }
 
 /* Wallet Adapter Dark Mode Overrides */
 .wallet-selector-dark .wallet-button,
 .ant-btn.wallet-button {
-  background-color: #1a1a1a !important;
-  border: 1px solid #333333 !important;
-  color: #ffffff !important;
-  border-radius: 6px !important;
+  background-color: #313244 !important;
+  border: 1px solid #45475a !important;
+  color: #cdd6f4 !important;
+  border-radius: 8px !important;
   padding: 8px 16px !important;
   font-size: 14px !important;
-  transition: all 0.15s ease !important;
+  transition: all 0.2s ease !important;
 }
 
 .wallet-selector-dark .wallet-button:hover,
 .ant-btn.wallet-button:hover {
-  background-color: #2a2a2a !important;
-  border-color: #555555 !important;
-  color: #ffffff !important;
+  background-color: #45475a !important;
+  border-color: #cba6f7 !important;
+  color: #cdd6f4 !important;
+  box-shadow: 0 0 15px rgba(203, 166, 247, 0.15) !important;
 }
 
-/* Modal dark mode */
+/* Modal dark mode - Obsidian */
 .ant-modal-content {
-  background-color: #1a1a1a !important;
-  color: #ffffff !important;
+  background-color: #313244 !important;
+  color: #cdd6f4 !important;
+  border: 1px solid #45475a !important;
 }
 
 .ant-modal-header {
-  background-color: #1a1a1a !important;
-  border-bottom: 1px solid #333333 !important;
+  background-color: #313244 !important;
+  border-bottom: 1px solid #45475a !important;
 }
 
 .ant-modal-title {
-  color: #ffffff !important;
+  color: #cdd6f4 !important;
 }
 
 .ant-modal-close-x {
-  color: #888888 !important;
+  color: #6c7086 !important;
 }
 
 .ant-modal-close-x:hover {
-  color: #ffffff !important;
+  color: #cdd6f4 !important;
 }
 
 .ant-modal-body {
-  background-color: #1a1a1a !important;
+  background-color: #313244 !important;
 }
 
 /* Wallet list items */
 .wallet-menu-wrapper,
 .ant-dropdown-menu {
-  background-color: #1a1a1a !important;
-  border: 1px solid #333333 !important;
+  background-color: #313244 !important;
+  border: 1px solid #45475a !important;
 }
 
 .wallet-menu-wrapper .wallet-name,
 .ant-dropdown-menu-item {
-  color: #ffffff !important;
+  color: #cdd6f4 !important;
   background-color: transparent !important;
 }
 
 .wallet-menu-wrapper .wallet-name:hover,
 .ant-dropdown-menu-item:hover {
-  background-color: #2a2a2a !important;
+  background-color: #45475a !important;
 }
+
+/* Custom utility classes */
+.glass-card {
+  background: rgba(49, 50, 68, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(69, 71, 90, 0.5);
+}
+
+.glow-purple {
+  box-shadow: 0 0 20px rgba(203, 166, 247, 0.2);
+}
+
+.text-gradient-purple {
+  background: linear-gradient(135deg, #cba6f7 0%, #b4befe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+

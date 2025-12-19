@@ -1,12 +1,37 @@
 /**
  * LoginPage.tsx
  * Google Authentication Login Page
+ * Obsidian theme with SVG icons - no emojis
  */
 
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../contexts/AuthContext';
+
+// SVG Icons
+const Icons = {
+  lock: (
+    <svg className="w-6 h-6 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+    </svg>
+  ),
+  chain: (
+    <svg className="w-6 h-6 text-brand-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+    </svg>
+  ),
+  check: (
+    <svg className="w-6 h-6 text-status-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  medical: (
+    <svg className="w-12 h-12 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+    </svg>
+  )
+};
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -61,17 +86,24 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-dark-bg flex items-center justify-center">
-      <div className="max-w-md w-full mx-4">
+      {/* Background Glow */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-primary/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-brand-secondary/10 rounded-full blur-[120px]" />
+      </div>
+
+      <div className="max-w-md w-full mx-4 relative z-10">
         {/* Logo Section */}
         <div className="text-center mb-8">
-          <div className="inline-block bg-dark-surface border border-dark-border rounded-xl p-6 mb-6">
-            <h1 className="text-3xl font-bold text-text-primary">MedChainID</h1>
+          <div className="inline-flex flex-col items-center bg-dark-card border border-dark-border rounded-2xl p-8 mb-6 shadow-glow">
+            {Icons.medical}
+            <h1 className="text-3xl font-bold text-gradient-purple mt-4">MedChainID</h1>
             <p className="text-sm text-text-secondary mt-2">Verifiable Medical Records</p>
           </div>
         </div>
 
         {/* Login Card */}
-        <div className="bg-dark-surface border border-dark-border rounded-xl p-8">
+        <div className="bg-dark-card border border-dark-border rounded-2xl p-8 shadow-lg">
           <h2 className="text-xl font-semibold text-text-primary mb-2">Welcome Back</h2>
           <p className="text-sm text-text-secondary mb-8">
             Sign in to manage your medical records securely on the blockchain
@@ -82,9 +114,9 @@ export default function LoginPage() {
             {/* Primary: Server-side OAuth flow (More Reliable) */}
             <button
               onClick={handleRedirectLogin}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800
-                text-white rounded-lg px-4 py-3 text-sm font-semibold
-                transition-all duration-150 flex items-center justify-center gap-3 shadow-lg"
+              className="w-full bg-gradient-to-r from-brand-primary to-brand-secondary hover:from-brand-primary/90 hover:to-brand-secondary/90
+                text-dark-crust rounded-xl px-4 py-3.5 text-sm font-semibold
+                transition-all duration-200 flex items-center justify-center gap-3 shadow-glow"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -112,7 +144,7 @@ export default function LoginPage() {
                 <div className="w-full border-t border-dark-border"></div>
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="px-2 bg-dark-surface text-text-muted">OR USE CLIENT-SIDE</span>
+                <span className="px-2 bg-dark-card text-text-muted">OR USE CLIENT-SIDE</span>
               </div>
             </div>
 
@@ -140,16 +172,16 @@ export default function LoginPage() {
 
         {/* Features */}
         <div className="mt-6 grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-2xl mb-1">🔒</div>
+          <div className="bg-dark-card/50 border border-dark-border/50 rounded-xl p-4">
+            <div className="flex justify-center mb-2">{Icons.lock}</div>
             <div className="text-xs text-text-muted">Encrypted</div>
           </div>
-          <div>
-            <div className="text-2xl mb-1">⛓️</div>
+          <div className="bg-dark-card/50 border border-dark-border/50 rounded-xl p-4">
+            <div className="flex justify-center mb-2">{Icons.chain}</div>
             <div className="text-xs text-text-muted">Blockchain</div>
           </div>
-          <div>
-            <div className="text-2xl mb-1">✓</div>
+          <div className="bg-dark-card/50 border border-dark-border/50 rounded-xl p-4">
+            <div className="flex justify-center mb-2">{Icons.check}</div>
             <div className="text-xs text-text-muted">Verified</div>
           </div>
         </div>
