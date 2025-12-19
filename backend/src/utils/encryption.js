@@ -148,6 +148,16 @@ function generateHash(buffer) {
             .update(buffer)
             .digest('hex');
         
+        // Validate hash length (should be 64 hex characters)
+        if (hash.length !== 64) {
+            throw new Error(`Invalid hash length: expected 64, got ${hash.length}`);
+        }
+        
+        // Validate hash contains only hex characters
+        if (!/^[0-9a-f]{64}$/i.test(hash)) {
+            throw new Error('Hash contains invalid characters');
+        }
+        
         // Add 0x prefix for blockchain compatibility
         return `0x${hash}`;
         

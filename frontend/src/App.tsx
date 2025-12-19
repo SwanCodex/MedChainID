@@ -9,6 +9,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import DashboardLayout from './components/DashboardLayout';
 import IssueRecordPage from './pages/IssueRecordPage';
+import Issuer from './pages/Issuer';
 import HistoryPage from './pages/HistoryPage';
 import PatientDashboard from './pages/PatientDashboard';
 import Verifier from './pages/Verifier';
@@ -40,6 +41,8 @@ function AppRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/verifier" element={<Verifier />} />
+        <Route path="/issuer" element={<Issuer />} />
+        <Route path="/patient" element={<PatientDashboard />} />
         <Route
           path="/"
           element={

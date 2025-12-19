@@ -17,7 +17,9 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { path: '/', label: 'Issue Record', icon: '📝' },
-  { path: '/my-records', label: 'My Records', icon: '👤' },
+  { path: '/issuer', label: 'Hospital Issuer', icon: '🏥' },
+  { path: '/patient', label: 'Patient Records', icon: '👤' },
+  { path: '/verifier', label: 'Verifier', icon: '✅' },
   { path: '/history', label: 'History', icon: '📊' },
 ];
 

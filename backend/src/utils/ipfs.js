@@ -42,7 +42,9 @@ async function uploadToPinata(buffer, filename, recordType = 'unknown') {
     try {
         // Validate inputs
         if (!PINATA_API_KEY || !PINATA_SECRET_KEY) {
-            throw new Error('Pinata API keys not configured. Check .env file.');
+            const errorMsg = 'Pinata API keys not configured. Please set PINATA_API_KEY and PINATA_SECRET_API_KEY in .env file. Get keys from https://app.pinata.cloud/';
+            console.error('❌', errorMsg);
+            throw new Error(errorMsg);
         }
 
         if (!Buffer.isBuffer(buffer)) {

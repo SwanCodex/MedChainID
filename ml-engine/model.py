@@ -122,7 +122,7 @@ def verify_document_with_ai(file_buffer: bytes, record_type: str):
         ocr_text = redact_pii(ocr_text)
 
         # ---- Gemini AI Stage ----
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        model = genai.GenerativeModel("gemini-1.5-flash")
 
         prompt = f"""
         You are an expert forensic document analyst.

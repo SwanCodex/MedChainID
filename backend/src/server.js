@@ -38,7 +38,7 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 5000;
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5001';
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:5001';
 
 // ============================================
 // Middleware Configuration
@@ -230,12 +230,20 @@ app.post('/api/upload', upload.single('document'), async (req, res) => {
         const { originalname, mimetype, size, buffer } = req.file;
         const { recordType } = req.body; // Extract recordType from form data
         
+        // Validate recordType is provided
+        if (!recordType || typeof recordType !== 'string' || recordType.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'recordType is required. Please provide a record type (e.g., "lab_result", "prescription", "xray").'
+            });
+        }
+        
         console.log('\n📄 Processing Document Upload');
         console.log('================================');
         console.log(`   Filename: ${originalname}`);
         console.log(`   MIME Type: ${mimetype}`);
         console.log(`   Size: ${(size / 1024).toFixed(2)} KB`);
-        console.log(`   Record Type: ${recordType || 'not specified'}`);
+        console.log(`   Record Type: ${recordType}`);
         console.log('================================\n');
 
         // ===== STEP 2: GENERATE HASH =====
@@ -281,8 +289,15 @@ app.post('/api/upload', upload.single('document'), async (req, res) => {
 
         // ===== STEP 6: IPFS UPLOAD =====
         console.log('\n☁️  Step 5/5: Uploading to IPFS via Pinata...');
-        const ipfsCid = await uploadToPinata(encryptedBuffer, originalname, recordType);
-        console.log(`   IPFS CID: ${ipfsCid}`);
+        let ipfsCid;
+        try {
+            ipfsCid = await uploadToPinata(encryptedBuffer, originalname, recordType);
+            console.log(`   IPFS CID: ${ipfsCid}`);
+        } catch (ipfsError) {
+            console.error('❌ IPFS Upload Error:', ipfsError.message);
+            // Re-throw with more context
+            throw new Error(`IPFS upload failed: ${ipfsError.message}. Please check Pinata API configuration.`);
+        }
 
         // ===== SUCCESS RESPONSE =====
         const processingTime = Date.now() - startTime;
@@ -306,10 +321,29 @@ app.post('/api/upload', upload.single('document'), async (req, res) => {
         const processingTime = Date.now() - startTime;
         console.error('\n❌ Upload Failed:', error.message);
         console.error(`   Failed after ${processingTime}ms\n`);
+        console.error('   Stack:', error.stack);
 
-        res.status(500).json({
+        // Provide more specific error messages based on error type
+        let statusCode = 500;
+        let errorMessage = 'Failed to process document';
+        
+        if (error.message.includes('Pinata API')) {
+            errorMessage = 'IPFS upload failed. Please check Pinata API configuration.';
+            statusCode = 503; // Service Unavailable
+        } else if (error.message.includes('Encryption failed')) {
+            errorMessage = 'File encryption failed. Please try again.';
+            statusCode = 500;
+        } else if (error.message.includes('IPFS upload failed')) {
+            errorMessage = 'Failed to upload to IPFS. Please check your network connection and Pinata configuration.';
+            statusCode = 503;
+        } else if (error.message.includes('Hash generation failed')) {
+            errorMessage = 'Document hash generation failed. Please try again.';
+            statusCode = 500;
+        }
+
+        res.status(statusCode).json({
             success: false,
-            error: 'Failed to process document',
+            error: errorMessage,
             message: error.message,
             timestamp: new Date().toISOString()
         });

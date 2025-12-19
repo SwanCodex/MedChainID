@@ -81,11 +81,18 @@ export default function IssueRecordPage() {
     setResult(null);
 
     try {
-      console.log('📤 Uploading document to backend...');
+      console.log('📤 Step 1/2: Uploading document to backend...');
       const uploadResult = await uploadDocument(file, recordType);
-      console.log('✅ Upload result:', uploadResult);
+      console.log('✅ Backend upload successful!');
+      console.log('   Document Hash:', uploadResult.documentHash);
+      console.log('   IPFS CID:', uploadResult.ipfsCID);
 
-      console.log('⛓️  Minting token on Aptos blockchain...');
+      console.log('⛓️  Step 2/2: Minting token on Aptos blockchain...');
+      
+      if (!signAndSubmitTransaction) {
+        throw new Error('Wallet not properly connected. Please refresh and reconnect wallet.');
+      }
+      
       const txResult = await mintToken(
         signAndSubmitTransaction,
         recordType,
@@ -93,7 +100,8 @@ export default function IssueRecordPage() {
         uploadResult.ipfsCID,
         patientAddress
       );
-      console.log('✅ Transaction result:', txResult);
+      console.log('✅ Blockchain transaction successful!');
+      console.log('   TX Hash:', txResult);
 
       setResult({
         ...uploadResult,

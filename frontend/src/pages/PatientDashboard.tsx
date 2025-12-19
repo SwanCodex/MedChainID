@@ -14,7 +14,7 @@ interface MedicalRecord {
   ipfs_cid: number[];
   document_hash: string;
   timestamp: string;
-  is_valid: boolean;
+  is_consumed: boolean;
   issuer: string;
   patient_address: string;
 }
@@ -60,8 +60,13 @@ export default function PatientDashboard() {
       console.log('📋 Fetched all tokens:', allTokens.length);
 
       // 2. FILTER: Only keep tokens where patient_address == Me
+      // Use case-insensitive comparison for Aptos addresses
       const myTokens = allTokens.filter(
-        (t: any) => t.patient_address === account?.address
+        (t: any) => {
+          const tokenAddress = (t.patient_address || '').toLowerCase().trim();
+          const myAddress = (account?.address || '').toLowerCase().trim();
+          return tokenAddress === myAddress && tokenAddress.length > 0;
+        }
       );
 
       console.log(`✅ Found ${myTokens.length} records for ${account?.address}`);
@@ -85,7 +90,9 @@ export default function PatientDashboard() {
     const cidString = new TextDecoder().decode(new Uint8Array(record.ipfs_cid));
 
     // 3. Construct URL with Fragment (#) so key is NOT sent to server
-    const url = `${window.location.origin}/verifier?cid=${cidString}#key=${secretKey}`;
+    // URL encode the CID to handle special characters safely
+    const encodedCid = encodeURIComponent(cidString);
+    const url = `${window.location.origin}/verifier?cid=${encodedCid}#key=${secretKey}`;
     
     navigator.clipboard.writeText(url);
     alert('🔗 Secure verification link copied to clipboard!\n\nYou can now share this link with authorized verifiers (doctors, insurance, etc.)');
@@ -124,6 +131,10 @@ export default function PatientDashboard() {
 
   return (
     <div className="p-8">
+      <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+        <a href="/issuer" style={{ color: '#10b981', textDecoration: 'underline' }}>← Hospital Issuer</a>
+        <a href="/verifier" style={{ color: '#10b981', textDecoration: 'underline' }}>Verifier →</a>
+      </div>
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold mb-2">👤 My Medical Vault</h2>
@@ -198,8 +209,8 @@ export default function PatientDashboard() {
                     </div>
                     <div>
                       <p className="text-text-muted text-xs mb-1">Status</p>
-                      <p className={`font-medium ${record.is_valid ? 'text-green-400' : 'text-red-400'}`}>
-                        {record.is_valid ? '✅ Valid' : '❌ Consumed'}
+                      <p className={`font-medium ${!record.is_consumed ? 'text-green-400' : 'text-red-400'}`}>
+                        {!record.is_consumed ? '✅ Active (Claimable)' : '❌ Consumed (Claimed)'}
                       </p>
                     </div>
                     <div>
@@ -216,6 +227,14 @@ export default function PatientDashboard() {
                       {record.document_hash}
                     </p>
                   </div>
+
+                  {record.is_consumed && (
+                    <div className="mt-3 px-3 py-2 bg-red-950/30 border border-red-900/50 rounded-md">
+                      <p className="text-xs text-red-400">
+                        ⚠️ This claim has been consumed and cannot be used for insurance again
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="ml-4">
