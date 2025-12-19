@@ -1,0 +1,52 @@
+[
+  {
+    "id": "TC001",
+    "title": "upload and verify medical document",
+    "description": "Test the /api/upload endpoint to ensure it correctly accepts a medical document, generates a SHA-256 hash, runs ML fraud detection, encrypts the file, uploads it to IPFS, and returns the expected response including docHash, ipfsCid, riskAnalysis, and metadata."
+  },
+  {
+    "id": "TC002",
+    "title": "verify document integrity against expected hash",
+    "description": "Test the /api/verify endpoint to verify that uploading a document and providing an expected hash returns the correct validation result indicating whether the document matches the expected hash."
+  },
+  {
+    "id": "TC003",
+    "title": "download encrypted document from ipfs",
+    "description": "Test the /api/download/{cid} endpoint to ensure it correctly downloads the encrypted document bytes from IPFS when provided a valid CID, and handles errors for missing or invalid CIDs."
+  },
+  {
+    "id": "TC004",
+    "title": "decrypt and view document from ipfs",
+    "description": "Test the /api/decrypt-view endpoint to verify that it fetches the encrypted document from IPFS using the provided CID and decrypts it correctly using the provided AES-256-CBC key, returning the decrypted document bytes in the appropriate format."
+  },
+  {
+    "id": "TC005",
+    "title": "backend health check",
+    "description": "Test the /api/health endpoint to confirm it returns the backend service health status, version, uptime, environment, and timestamp correctly."
+  },
+  {
+    "id": "TC006",
+    "title": "initiate google oauth login",
+    "description": "Test the /api/auth/google endpoint to verify it redirects the user to Google OAuth login page with a 302 status code."
+  },
+  {
+    "id": "TC007",
+    "title": "handle google oauth callback and issue jwt",
+    "description": "Test the /api/auth/google/callback endpoint to ensure it handles the OAuth callback correctly, issues a JWT token, and redirects to the frontend with a 302 status code."
+  },
+  {
+    "id": "TC008",
+    "title": "verify google id token and issue jwt",
+    "description": "Test the /api/auth/google/verify endpoint to verify that providing a valid Google ID token returns a signed JWT and user info, and invalid or missing tokens return appropriate error responses."
+  },
+  {
+    "id": "TC009",
+    "title": "get current authenticated user",
+    "description": "Test the /api/auth/user endpoint to ensure it returns the authenticated user's information when provided a valid JWT, and returns 401 Unauthorized when no or invalid JWT is provided."
+  },
+  {
+    "id": "TC010",
+    "title": "logout user and clear session",
+    "description": "Test the /api/auth/logout endpoint to verify it clears the authentication cookie or token and returns a success message confirming logout."
+  }
+]

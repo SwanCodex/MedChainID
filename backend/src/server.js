@@ -155,7 +155,7 @@ async function analyzeWithML(text, filename) {
             filename: filename,
             timestamp: new Date().toISOString()
         }, {
-            timeout: 30000, // 30 second timeout
+            timeout: 60000, // 60 second timeout
             headers: {
                 'Content-Type': 'application/json'
             }
@@ -228,12 +228,14 @@ app.post('/api/upload', upload.single('document'), async (req, res) => {
         }
 
         const { originalname, mimetype, size, buffer } = req.file;
+        const { recordType } = req.body; // Extract recordType from form data
         
         console.log('\n📄 Processing Document Upload');
         console.log('================================');
         console.log(`   Filename: ${originalname}`);
         console.log(`   MIME Type: ${mimetype}`);
         console.log(`   Size: ${(size / 1024).toFixed(2)} KB`);
+        console.log(`   Record Type: ${recordType || 'not specified'}`);
         console.log('================================\n');
 
         // ===== STEP 2: GENERATE HASH =====
@@ -279,7 +281,7 @@ app.post('/api/upload', upload.single('document'), async (req, res) => {
 
         // ===== STEP 6: IPFS UPLOAD =====
         console.log('\n☁️  Step 5/5: Uploading to IPFS via Pinata...');
-        const ipfsCid = await uploadToPinata(encryptedBuffer, originalname);
+        const ipfsCid = await uploadToPinata(encryptedBuffer, originalname, recordType);
         console.log(`   IPFS CID: ${ipfsCid}`);
 
         // ===== SUCCESS RESPONSE =====

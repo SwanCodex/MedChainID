@@ -30,7 +30,7 @@ export async function mintToken(
     functionArguments: [patientAddress, recordTypeBytes, documentHashBytes, ipfsCIDBytes],
   };
 
-  const response = await signAndSubmitTransaction(payload);
+  const response = await signAndSubmitTransaction({ data: payload });
   await aptos.waitForTransaction({ transactionHash: response.hash });
   
   return response.hash;
@@ -82,7 +82,7 @@ export async function consumeToken(
     functionArguments: [issuerAddress, tokenId],
   };
 
-  const response = await signAndSubmitTransaction(payload);
+  const response = await signAndSubmitTransaction({ data: payload });
   await aptos.waitForTransaction({ transactionHash: response.hash });
   
   return response.hash;
